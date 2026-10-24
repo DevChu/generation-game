@@ -1,0 +1,1737 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>跨世代團康挑戰賽</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #111111;
+      --panel: #1b1b1b;
+      --panel-2: #242424;
+      --line: #383838;
+      --text: #f6f2e8;
+      --muted: #c7bfae;
+      --gold: #ffd166;
+      --red: #ef476f;
+      --green: #06d6a0;
+      --blue: #4cc9f0;
+      --violet: #b388ff;
+      --accent: var(--gold);
+      --shadow: 0 18px 60px rgba(0, 0, 0, .34);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      width: 100%;
+      background:
+        radial-gradient(circle at 10% 10%, rgba(255, 209, 102, .12), transparent 28rem),
+        radial-gradient(circle at 80% 20%, rgba(76, 201, 240, .12), transparent 30rem),
+        var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    button, input, select, textarea { font: inherit; }
+
+    button {
+      border: 1px solid var(--line);
+      background: #2b2b2b;
+      color: var(--text);
+      border-radius: 8px;
+      padding: .62rem .85rem;
+      cursor: pointer;
+      min-width: 0;
+      transition: transform .12s ease, border-color .12s ease, background .12s ease;
+    }
+
+    button:hover { border-color: #696969; background: #333333; }
+    button:active { transform: translateY(1px); }
+    button:disabled { opacity: .38; cursor: not-allowed; filter: grayscale(1); }
+    button.primary { background: var(--gold); color: #15120a; border-color: var(--gold); font-weight: 800; }
+    button.good { background: rgba(6, 214, 160, .18); border-color: rgba(6, 214, 160, .55); }
+    button.warn { background: rgba(239, 71, 111, .18); border-color: rgba(239, 71, 111, .55); }
+    button.small { padding: .42rem .55rem; font-size: .88rem; }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #141414;
+      color: var(--text);
+      border-radius: 8px;
+      padding: .55rem .65rem;
+    }
+
+    textarea { resize: vertical; min-height: 7rem; font-size: .82rem; }
+
+    .app {
+      height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-width: 0;
+      width: 100%;
+      max-width: 100vw;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(15rem, 1fr) auto;
+      gap: 1rem;
+      align-items: center;
+      padding: .85rem 1rem;
+      border-bottom: 1px solid var(--line);
+      background: rgba(17, 17, 17, .86);
+      backdrop-filter: blur(16px);
+      min-width: 0;
+    }
+
+    .brand { min-width: 0; }
+    .brand h1 { margin: 0; font-size: clamp(1.25rem, 2.4vw, 2.15rem); line-height: 1.05; }
+    .brand .sub { margin-top: .28rem; color: var(--muted); display: flex; gap: .75rem; flex-wrap: wrap; font-size: .95rem; }
+
+    .top-actions { display: flex; align-items: center; justify-content: flex-end; gap: .45rem; flex-wrap: wrap; min-width: 0; }
+
+    .main {
+      min-height: 0;
+      min-width: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) clamp(20rem, 25vw, 26rem);
+      gap: 1rem;
+      padding: 1rem;
+      width: 100%;
+    }
+
+    body.presentation .host-panel { display: none; }
+    body.presentation .main { grid-template-columns: minmax(0, 1fr); }
+
+    .stage {
+      container-type: inline-size;
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
+      gap: 1rem;
+    }
+
+    .screen {
+      min-width: 0;
+      min-height: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(145deg, rgba(36, 36, 36, .92), rgba(18, 18, 18, .96));
+      box-shadow: var(--shadow);
+      padding: clamp(1rem, 2vw, 2rem);
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 1rem;
+      overflow: hidden;
+    }
+
+    .screen[data-type="smart10"] { --accent: var(--blue); }
+    .screen[data-type="guess"] { --accent: var(--red); }
+    .screen[data-type="wave"] { --accent: var(--green); }
+
+    .round-meta { display: flex; align-items: center; justify-content: space-between; gap: .75rem; color: var(--muted); font-weight: 700; flex-wrap: wrap; }
+    .round-meta .group { display: flex; gap: .5rem; flex-wrap: wrap; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: .3rem .7rem;
+      background: rgba(255, 255, 255, .04);
+      white-space: nowrap;
+    }
+
+    .badge.type { color: #111; background: var(--accent); border-color: var(--accent); font-weight: 900; }
+    .badge.backup { color: var(--gold); border-color: rgba(255, 209, 102, .55); }
+    .badge.rep { color: var(--text); border-color: var(--red); }
+
+    .question {
+      min-height: 0;
+      min-width: 0;
+      display: grid;
+      align-content: center;
+      gap: 1.1rem;
+      gap: calc(1.1rem * var(--fit, 1));
+      text-align: center;
+      overflow: auto;
+      container-type: inline-size;
+    }
+
+    /* 中文換行：JS 依詞語插入 <wbr>，這裡禁止詞中斷行；真的放不下才強制斷。 */
+    .prompt, .hint, .option .text, .cell .label, .spectrum-ends, .rule-card, .team-name, .qitem .t {
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+      line-break: strict;
+    }
+
+
+    .prompt {
+      margin: 0 auto;
+      width: 100%;
+      max-width: 64rem;
+      font-size: calc(clamp(1.5rem, 5.4cqi, 4rem) * var(--fit, 1));
+      line-height: 1.18;
+      font-weight: 950;
+      text-wrap: balance;
+    }
+
+    .hint {
+      margin: 0 auto;
+      width: 100%;
+      max-width: 60rem;
+      color: var(--muted);
+      font-size: calc(clamp(.95rem, 2.1cqi, 1.5rem) * var(--fit, 1));
+      line-height: 1.4;
+      text-wrap: balance;
+    }
+
+    .hint.result {
+      color: var(--gold);
+      font-weight: 850;
+      border: 1px solid rgba(255, 209, 102, .45);
+      background: rgba(255, 209, 102, .08);
+      border-radius: 8px;
+      padding: .6rem 1rem;
+      max-width: 52rem;
+    }
+
+    /* ---------- 選項卡（十分機靈 / 心有靈犀） ---------- */
+    .options {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: .7rem;
+      width: 100%;
+      max-width: 90rem;
+      margin: 0 auto;
+    }
+
+    .option {
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .045);
+      padding: .8rem .9rem;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: .6rem;
+      align-items: center;
+      text-align: left;
+      min-height: calc(5.2rem * var(--fit, 1));
+      transition: opacity .25s ease, background .25s ease, border-color .25s ease;
+    }
+
+    .option .letter {
+      width: 2.3rem;
+      height: 2.3rem;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-weight: 950;
+      font-size: 1.15rem;
+      background: var(--accent);
+      color: #111;
+    }
+
+    .option .text {
+      font-size: calc(clamp(.95rem, 2cqi, 1.45rem) * var(--fit, 1));
+      font-weight: 800;
+      line-height: 1.25;
+      min-width: 0;
+      text-wrap: balance;
+    }
+
+    .option .count {
+      grid-column: 1 / -1;
+      justify-self: end;
+      margin-top: -.3rem;
+      font-size: .8rem;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .option.correct { border-color: var(--green); background: rgba(6, 214, 160, .18); box-shadow: 0 0 0 2px rgba(6, 214, 160, .35); }
+    .option.correct .letter { background: var(--green); }
+    .option.wrong { opacity: .38; }
+    .option.wrong .text { text-decoration: line-through; }
+    .option.dim .letter, .option.dim .text { opacity: .4; }
+
+    .options.five .option {
+      grid-template-columns: 1fr;
+      justify-items: center;
+      text-align: center;
+      align-content: start;
+      min-height: calc(10rem * var(--fit, 1));
+      padding: 1.1rem .8rem;
+    }
+
+    .options.five .option .letter { width: 3rem; height: 3rem; font-size: 1.5rem; }
+    .options.five .option .text { font-size: calc(clamp(1.05rem, 2.6cqi, 1.85rem) * var(--fit, 1)); }
+
+    .chips { display: flex; flex-wrap: wrap; gap: .25rem; justify-content: center; grid-column: 1 / -1; }
+
+    .chip {
+      font-size: .82rem;
+      font-weight: 900;
+      padding: .14rem .5rem;
+      border-radius: 999px;
+      color: #111;
+      background: var(--c, var(--gold));
+      white-space: nowrap;
+    }
+
+    /* ---------- 光譜（所見略同） ---------- */
+    .spectrum { display: grid; gap: .7rem; width: 100%; max-width: 80rem; margin: 0 auto; }
+
+    .spectrum-ends {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      font-weight: 950;
+      font-size: calc(clamp(1.05rem, 2.8cqi, 2rem) * var(--fit, 1));
+      text-align: left;
+    }
+
+    .spectrum-ends span:last-child { text-align: right; }
+
+    .spectrum-ends span:first-child { color: var(--blue); }
+    .spectrum-ends span:last-child { color: var(--red); }
+
+    .spectrum-track { position: relative; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-top: 1.6rem; }
+
+    .cell {
+      padding: .9rem .5rem;
+      text-align: center;
+      border: 1px solid var(--line);
+      margin-left: -1px;
+      display: grid;
+      align-content: start;
+      justify-items: center;
+      gap: .45rem;
+      min-height: calc(10rem * var(--fit, 1));
+      min-width: 0;
+      transition: box-shadow .25s ease, background .25s ease;
+    }
+
+    .cell:first-child { border-radius: 8px 0 0 8px; margin-left: 0; }
+    .cell:last-child { border-radius: 0 8px 8px 0; }
+    .cell:nth-child(1) { background: rgba(76, 201, 240, .22); }
+    .cell:nth-child(2) { background: rgba(76, 201, 240, .1); }
+    .cell:nth-child(3) { background: rgba(255, 255, 255, .05); }
+    .cell:nth-child(4) { background: rgba(239, 71, 111, .1); }
+    .cell:nth-child(5) { background: rgba(239, 71, 111, .22); }
+
+    .cell .num { font-size: calc(clamp(2rem, 5.4cqi, 4rem) * var(--fit, 1)); font-weight: 950; line-height: 1; }
+    .cell .label { color: var(--muted); font-size: calc(clamp(.85rem, 1.9cqi, 1.35rem) * var(--fit, 1)); font-weight: 800; line-height: 1.25; text-wrap: balance; }
+    .cell.hit { box-shadow: inset 0 0 0 3px var(--gold); }
+    .cell.hit .num { color: var(--gold); }
+    .cell.near { box-shadow: inset 0 0 0 2px rgba(255, 209, 102, .4); }
+
+    .target {
+      position: absolute;
+      top: -.45rem;
+      height: 1.3rem;
+      width: 6px;
+      border-radius: 4px;
+      background: var(--gold);
+      box-shadow: 0 0 18px rgba(255, 209, 102, .7);
+      transform: translateX(-50%);
+      pointer-events: none;
+      transition: left .6s ease;
+    }
+
+    .target span {
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translate(-50%, -.2rem);
+      white-space: nowrap;
+      background: var(--gold);
+      color: #111;
+      font-weight: 950;
+      padding: .15rem .6rem;
+      border-radius: 999px;
+      font-size: .95rem;
+    }
+
+    /* ---------- 計時 ---------- */
+    .timer-row { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: .9rem; min-width: 0; }
+    .timer-side { display: grid; gap: .55rem; min-width: 0; }
+    body.answer-mode .timer-row { display: none; }
+
+    .timer {
+      width: 5.2rem;
+      height: 5.2rem;
+      border-radius: 50%;
+      border: .42rem solid rgba(255, 209, 102, .35);
+      display: grid;
+      place-items: center;
+      color: var(--gold);
+      font-size: 1.75rem;
+      font-weight: 950;
+      background: rgba(0, 0, 0, .22);
+    }
+
+    .timer.urgent { color: var(--red); border-color: rgba(239, 71, 111, .5); }
+
+    .bar { height: .85rem; background: rgba(255, 255, 255, .08); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+    .bar > div { height: 100%; width: 0%; background: linear-gradient(90deg, var(--green), var(--gold), var(--red)); transition: width .2s linear; }
+
+    .step-stack { display: flex; flex-wrap: wrap; gap: .45rem; }
+    .step-stack button { font-weight: 850; white-space: nowrap; padding: .5rem .9rem; }
+
+    /* ---------- 計分板 ---------- */
+    .scoreboard { display: grid; grid-template-columns: repeat(var(--n, 8), minmax(0, 1fr)); gap: .5rem; min-height: 0; container-type: inline-size; }
+
+    .score-card {
+      border: 1px solid var(--line);
+      border-top: 4px solid var(--c);
+      border-radius: 8px;
+      padding: .4rem .6rem .45rem;
+      background: rgba(0, 0, 0, .24);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: .15rem .3rem;
+      align-items: start;
+    }
+
+    .team-name { color: var(--muted); font-weight: 800; min-width: 0; line-height: 1.2; }
+    .score { grid-column: 1 / -1; justify-self: end; color: var(--gold); font-size: clamp(1.4rem, 3.2cqi, 2.8rem); line-height: .95; font-weight: 950; }
+    .score-card .team-name { font-size: clamp(.78rem, 1.45cqi, 1rem); }
+    .delta { color: var(--green); font-weight: 950; font-size: clamp(.78rem, 1.45cqi, 1rem); line-height: 1.2; }
+
+    /* ---------- 主持面板 ---------- */
+    .host-panel { min-width: 0; min-height: 0; display: grid; grid-template-rows: auto 1fr; gap: .8rem; overflow: hidden; }
+    .tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .3rem; }
+    .tabs button { white-space: nowrap; padding-inline: .3rem; }
+    .tabs button.active { background: var(--gold); color: #15120a; border-color: var(--gold); font-weight: 900; }
+
+    .panel-body { min-height: 0; overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: rgba(27, 27, 27, .92); padding: .85rem; }
+    .panel-section { border-bottom: 1px solid var(--line); padding-bottom: .9rem; margin-bottom: .9rem; }
+    .panel-section:last-child { border-bottom: 0; margin-bottom: 0; padding-bottom: 0; }
+    .panel-section h2 { font-size: 1rem; margin: 0 0 .65rem; }
+    .panel-section h3 { font-size: .9rem; margin: .7rem 0 .4rem; color: var(--muted); }
+
+    .flow-buttons, .row-buttons { display: flex; flex-wrap: wrap; gap: .45rem; }
+    .field { display: grid; gap: .28rem; margin-bottom: .55rem; }
+    .field label { color: var(--muted); font-size: .82rem; font-weight: 750; }
+    .muted { color: var(--muted); font-size: .85rem; line-height: 1.5; }
+    .host-answer { color: var(--green); font-weight: 900; margin-bottom: .4rem; }
+    .host-note { color: var(--text); line-height: 1.5; background: rgba(255, 209, 102, .07); border-left: 3px solid var(--gold); padding: .5rem .65rem; border-radius: 4px; }
+
+    .score-table { display: grid; gap: .45rem; }
+
+    .score-row {
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--c);
+      border-radius: 8px;
+      padding: .45rem .55rem;
+      background: rgba(255, 255, 255, .035);
+      display: grid;
+      gap: .35rem;
+    }
+
+    .score-row .head { display: flex; justify-content: space-between; align-items: center; gap: .5rem; font-weight: 800; }
+    .score-row .head b { color: var(--gold); }
+    .score-row .head .pending { color: var(--muted); font-weight: 700; font-size: .8rem; }
+
+    .pickers { display: flex; flex-wrap: wrap; gap: .25rem; }
+    .pickers button { min-width: 2rem; padding: .3rem .42rem; font-size: .85rem; font-weight: 800; }
+    .pickers button.on { background: var(--gold); border-color: var(--gold); color: #111; }
+    .pickers button.on.ok { background: var(--green); border-color: var(--green); }
+    .pickers button.on.bad { background: var(--red); border-color: var(--red); }
+    .pickers button.ok:not(.on) { border-color: rgba(6, 214, 160, .7); }
+
+    .bonus-row { display: grid; grid-template-columns: 1fr auto auto auto; gap: .35rem; align-items: center; }
+    .bonus-row .dot, .score-row .dot { display: inline-block; width: .65rem; height: .65rem; border-radius: 50%; background: var(--c); margin-right: .35rem; }
+    .bonus-row strong { color: var(--gold); min-width: 2.2rem; text-align: right; }
+
+    .qgroup { margin-bottom: .7rem; }
+    .qgroup h3 { margin: .2rem 0 .35rem; font-size: .88rem; color: var(--gold); }
+    .qitem {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: .45rem;
+      align-items: center;
+      width: 100%;
+      text-align: left;
+      padding: .42rem .55rem;
+      margin-bottom: .25rem;
+      font-size: .86rem;
+    }
+    .qitem.active { border-color: var(--gold); background: rgba(255, 209, 102, .12); }
+    .qitem.is-backup { opacity: .7; border-style: dashed; }
+    .qitem .t { min-width: 0; line-height: 1.35; }
+    .qitem .flag { color: var(--muted); font-size: .78rem; white-space: nowrap; }
+
+    .tag { font-size: .72rem; font-weight: 900; padding: .1rem .4rem; border-radius: 999px; color: #111; white-space: nowrap; }
+    .tag.smart10 { background: var(--blue); }
+    .tag.guess { background: var(--red); }
+    .tag.wave { background: var(--green); }
+
+    .team-line { display: grid; grid-template-columns: 1fr 4.5rem auto; gap: .35rem; align-items: center; margin-bottom: .45rem; }
+    .check { display: flex; align-items: center; gap: .45rem; color: var(--muted); font-size: .88rem; margin-bottom: .55rem; }
+    .check input { width: auto; }
+
+    .rules { color: var(--muted); line-height: 1.55; font-size: .95rem; }
+    .rules strong { color: var(--text); }
+    .kbd { color: var(--gold); font-weight: 850; }
+
+    /* ---------- 規則頁 ---------- */
+    .rules-screen { display: none; min-height: 0; overflow: auto; padding: clamp(.2rem, 1vw, 1rem); }
+    body.rules-mode .screen { grid-template-rows: minmax(0, 1fr); }
+    body.rules-mode .round-meta, body.rules-mode .question, body.rules-mode .timer-row { display: none; }
+    body.rules-mode .rules-screen { display: grid; align-content: safe center; gap: 1rem; }
+
+    .rules-title { margin: 0; color: var(--gold); font-size: clamp(2.2rem, 4.6vw, 4.4rem); line-height: 1.05; text-align: center; text-wrap: balance; }
+
+    .rules-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; width: min(78rem, 100%); margin: 0 auto; }
+
+    .rule-card {
+      border: 1px solid var(--line);
+      border-top: 4px solid var(--c, var(--gold));
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .045);
+      padding: 1.1rem 1.3rem;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+
+    .rule-card h3 { margin: 0 0 .5rem; color: var(--text); font-size: clamp(1.45rem, 2.2vw, 2rem); text-wrap: balance; }
+    .rule-card p { margin: .25rem 0; font-size: clamp(1.1rem, 1.6vw, 1.45rem); text-wrap: pretty; }
+    .rule-card b { color: var(--gold); }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 1rem;
+      transform: translateX(-50%) translateY(1rem);
+      opacity: 0;
+      pointer-events: none;
+      background: #f6f2e8;
+      color: #171717;
+      border-radius: 8px;
+      padding: .65rem .9rem;
+      font-weight: 850;
+      box-shadow: var(--shadow);
+      transition: opacity .18s ease, transform .18s ease;
+      z-index: 10;
+    }
+
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-height: 860px) {
+      .topbar { padding: .5rem 1rem; }
+      .brand h1 { font-size: 1.35rem; }
+      .brand .sub { margin-top: .15rem; font-size: .85rem; }
+      .top-actions button { padding: .45rem .7rem; }
+      .main { padding: .7rem; gap: .7rem; }
+      .stage { gap: .7rem; }
+      .screen { padding: 1rem 1.2rem; gap: .7rem; }
+      .timer { width: 4.4rem; height: 4.4rem; font-size: 1.45rem; border-width: .35rem; }
+    }
+
+    @container (max-width: 760px) {
+      .scoreboard { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+
+    /* 依舞台寬度（而非視窗寬度）調整選項欄數 */
+    @container (max-width: 720px) {
+      .options:not(.five) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .options:not(.five) .option { min-height: 3.4rem; padding: .5rem .7rem; }
+      .options.five { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .options.five .option { min-height: 0; }
+    }
+
+    @container (max-width: 420px) {
+      .options:not(.five), .options.five { grid-template-columns: 1fr; }
+      .options.five .option { grid-template-columns: auto minmax(0, 1fr); justify-items: start; text-align: left; padding: .6rem .8rem; }
+      .options.five .option .letter { width: 2.3rem; height: 2.3rem; font-size: 1.1rem; }
+      .cell { padding: .6rem .2rem; }
+    }
+
+    @media (max-width: 1180px) {
+      body { overflow: auto; overflow-x: hidden; }
+      .app { height: auto; min-height: 100vh; }
+      .main { grid-template-columns: 1fr; }
+      .topbar { grid-template-columns: 1fr; }
+      .top-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .top-actions button { width: 100%; padding-inline: .45rem; }
+      .rules-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      .main { padding: .65rem; }
+      .screen { padding: .8rem; }
+      .scoreboard { grid-template-columns: 1fr 1fr; }
+      .top-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .tabs button { padding-inline: .25rem; }
+      .cell .label { font-size: .8rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <h1>跨世代團康挑戰賽</h1>
+        <div class="sub">
+          <span id="themeLabel">題庫</span>
+          <span id="questionLabel">-</span>
+          <span id="modeLabel">準備中</span>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="good" onclick="location.href='live.html'" title="讓全場掃 QR Code 作答">全場連線</button>
+        <button id="prevBtn" title="上一題（←）">上一題</button>
+        <button id="nextBtn" class="primary" title="下一題（→）">下一題</button>
+        <button id="answerBtn" title="公布或隱藏答案（A）">公布答案</button>
+        <button id="rulesBtn" title="顯示規則介紹頁">規則頁</button>
+        <button id="presentationBtn" title="隱藏右側主持面板">放映模式</button>
+        <button id="fullscreenBtn" title="進入全螢幕（F）">全螢幕</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="stage">
+        <div class="screen" id="screen">
+          <div class="round-meta">
+            <div class="group">
+              <span class="badge" id="themeBadge">主題</span>
+              <span class="badge type" id="typeBadge">題型</span>
+              <span class="badge" id="questionNumber">-</span>
+              <span class="badge backup" id="backupBadge" hidden>備用題</span>
+            </div>
+            <div class="group">
+              <span class="badge rep" id="repBadge" hidden></span>
+              <span class="badge" id="pointBadge">-</span>
+            </div>
+          </div>
+
+          <div class="question">
+            <h2 class="prompt" id="prompt">題庫載入中</h2>
+            <p class="hint" id="hint"></p>
+            <div class="board" id="board"></div>
+          </div>
+
+          <div class="timer-row">
+            <div class="timer" id="timer">0</div>
+            <div class="timer-side">
+              <div class="step-stack" id="screenSteps"></div>
+              <div class="bar" aria-label="倒數進度"><div id="timerBar"></div></div>
+            </div>
+          </div>
+
+          <section class="rules-screen" id="rulesScreen">
+            <h2 class="rules-title">遊戲規則</h2>
+            <div class="rules-grid">
+              <div class="rule-card">
+                <h3>今天怎麼玩</h3>
+                <p>5 個主題，每個主題 4 題，三種遊戲輪流登場。</p>
+                <p>每個主題請<b>一位代表</b>上台回答「心有靈犀」，不同年齡層輪流上台。</p>
+              </div>
+              <div class="rule-card" style="--c: var(--blue)">
+                <h3>十分機靈｜整組合作</h3>
+                <p>題目有客觀正確答案。把你們認為<b>正確</b>的選項全部寫下來。</p>
+                <p>選對一個 <b>+1</b>、選錯一個 <b>−1</b>，每題最低 0 分。</p>
+              </div>
+              <div class="rule-card" style="--c: var(--red)">
+                <h3>心有靈犀｜猜台上那個人</h3>
+                <p>台上代表先偷偷選一個答案，各組猜他會選什麼。</p>
+                <p>猜中 <b>+3</b>。越了解對方越容易得分！</p>
+              </div>
+              <div class="rule-card" style="--c: var(--green)">
+                <h3>所見略同｜組內協商</h3>
+                <p>每人先選 1–5 → 一起公開 → 組內討論 → 決定一個代表整組的數字。</p>
+                <p>最接近<b>全場平均</b>：正中 <b>+3</b>、差 1 格 <b>+1</b>。</p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="scoreboard" id="scoreboard"></div>
+      </section>
+
+      <aside class="host-panel">
+        <nav class="tabs" aria-label="主持面板">
+          <button class="active" data-tab="run">流程</button>
+          <button data-tab="score">計分</button>
+          <button data-tab="rules">規則</button>
+          <button data-tab="teams">隊伍</button>
+          <button data-tab="data">題庫</button>
+        </nav>
+
+        <div class="panel-body">
+          <section class="panel-page" data-page="run">
+            <div class="panel-section">
+              <h2>計時流程</h2>
+              <div class="flow-buttons" id="panelSteps"></div>
+              <div class="flow-buttons" style="margin-top: .45rem;">
+                <button id="pauseTimer">暫停 / 繼續</button>
+                <button id="resetTimer">重設</button>
+              </div>
+            </div>
+            <div class="panel-section">
+              <h2>主持提示</h2>
+              <div id="hostNote" class="muted"></div>
+            </div>
+            <div class="panel-section">
+              <h2>題目列表</h2>
+              <label class="check"><input type="checkbox" id="skipBackups"> 上一題 / 下一題略過備用題</label>
+              <div id="questionList"></div>
+            </div>
+            <div class="panel-section rules">
+              <p>快捷鍵：<span class="kbd">←/→</span> 換題、<span class="kbd">A</span> 公布答案、<span class="kbd">空白鍵</span> 暫停計時、<span class="kbd">F</span> 全螢幕。</p>
+            </div>
+          </section>
+
+          <section class="panel-page" data-page="score" hidden>
+            <div class="panel-section">
+              <h2>本題輸入</h2>
+              <div id="scoreInput"></div>
+            </div>
+            <div class="panel-section">
+              <h2>額外加減分</h2>
+              <div class="score-table" id="bonusTable"></div>
+            </div>
+            <div class="panel-section">
+              <h2>整場控制</h2>
+              <div class="row-buttons">
+                <button id="exportScores">匯出分數 JSON</button>
+                <button id="resetScores" class="warn">整場重設</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel-page" data-page="rules" hidden>
+            <div class="panel-section rules">
+              <h2>主持人介紹</h2>
+              <p><strong>開場：</strong>今天 8 組要一起闖 5 個主題，從輕鬆的生活題，慢慢走到「理解不同世代」。</p>
+              <p><strong>十分機靈：</strong>有正確答案，整組合作判斷。選對 +1、選錯 −1，每題最低 0 分。</p>
+              <p><strong>心有靈犀：</strong>每主題派一位代表上台，同一位回答該主題的 1–2 題。代表偷偷告訴主持人答案，各組猜中 +3。</p>
+              <p><strong>所見略同：</strong>每人先選、數到三一起比手指公開，再討論出一個組別答案。最接近全場平均正中 +3、差 1 格 +1。主持人可追問「為什麼最後決定這個數字？」</p>
+              <p><strong>代表輪替：</strong>五個主題五位不同代表，請不同年齡層輪流上台。</p>
+              <button id="showRulesPage" class="primary">投影顯示規則頁</button>
+            </div>
+          </section>
+
+          <section class="panel-page" data-page="teams" hidden>
+            <div class="panel-section">
+              <h2>隊伍設定</h2>
+              <div class="muted" style="margin-bottom: .45rem;">名稱 / 額外加減分</div>
+              <div id="teamEditor"></div>
+              <div class="row-buttons">
+                <button id="addTeam">新增隊伍</button>
+                <button id="saveTeams" class="primary">儲存隊伍</button>
+              </div>
+            </div>
+            <div class="panel-section">
+              <h2>各主題「心有靈犀」代表</h2>
+              <div id="repEditor"></div>
+              <button id="saveReps" class="primary">儲存代表</button>
+            </div>
+          </section>
+
+          <section class="panel-page" data-page="data" hidden>
+            <div class="panel-section">
+              <h2>CSV 題庫</h2>
+              <p class="muted">欄位：theme, type（smart10 / guess / wave）, backup, prompt, options（用 | 分隔）, answer（十分機靈正解字母）, left, right, scale（所見略同 1–5 說明，用 | 分隔）, points, note。套用新題庫會清空作答紀錄。</p>
+              <div class="field"><label>載入 CSV 檔</label><input id="csvFileInput" type="file" accept=".csv,text/csv"></div>
+              <textarea id="questionCsv" spellcheck="false"></textarea>
+              <div class="row-buttons">
+                <button id="copyQuestions">載入目前題庫 CSV</button>
+                <button id="importQuestions" class="primary">套用 CSV</button>
+                <button id="reloadCsv">重新讀取 questions.csv</button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- 內建題庫備援：直接點兩下開啟 index.html（file://）時，fetch 會被瀏覽器擋下，
+       改用 questions.js 內的題庫。編輯 questions.csv 後執行 scripts/build-questions.sh 重新產生。 -->
+  <script src="questions.js"></script>
+  <script>
+    const TYPES = {
+      smart10: {
+        label: "十分機靈",
+        defaultPoints: 1,
+        hint: "整組合作判斷：把你們認為「正確」的選項全部寫下來。",
+        points: p => `選對 +${p}・選錯 −${p}`,
+        steps: [["discuss", "小組討論", 60], ["final", "最後決定", 10]]
+      },
+      guess: {
+        label: "心有靈犀",
+        defaultPoints: 3,
+        hint: "台上代表先偷偷選一個，各組猜他會選什麼！",
+        points: p => `猜中 +${p}`,
+        steps: [["secret", "代表作答", 15], ["guess", "各組猜", 30], ["final", "最後決定", 10]]
+      },
+      wave: {
+        label: "所見略同",
+        defaultPoints: 3,
+        hint: "每人先選 1–5 → 一起公開 → 組內討論 → 決定一個代表整組的數字。",
+        points: p => `正中 +${p}・差 1 格 +1`,
+        steps: [["solo", "個人選擇", 15], ["discuss", "組內討論", 60], ["final", "最後決定", 10]]
+      }
+    };
+    const TYPE_ORDER = ["smart10", "guess", "wave"];
+    const LETTERS = "ABCDEFGHIJ";
+    const NUMERALS = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
+    const TEAM_COLORS = ["#ffd166", "#ef476f", "#06d6a0", "#4cc9f0", "#b388ff", "#ff9f1c", "#f78fb3", "#9ae66e"];
+    const STORE_KEY = "genquiz.state.v1";
+    const CSV_HEADERS = ["theme", "type", "backup", "prompt", "options", "answer", "left", "right", "scale", "points", "note"];
+
+    const saved = load(STORE_KEY, {});
+    const state = {
+      questions: [],
+      current: 0,
+      teams: Array.isArray(saved.teams) && saved.teams.length ? saved.teams : defaultTeams(),
+      reps: saved.reps || {},
+      records: {},
+      revealed: {},
+      skipBackups: saved.skipBackups ?? true,
+      step: "",
+      timerTotal: 0,
+      timerLeft: 0,
+      timerRunning: false,
+      timerId: null,
+      peek: false
+    };
+
+    const $ = selector => document.querySelector(selector);
+    const el = {
+      screen: $("#screen"),
+      themeLabel: $("#themeLabel"),
+      questionLabel: $("#questionLabel"),
+      modeLabel: $("#modeLabel"),
+      themeBadge: $("#themeBadge"),
+      typeBadge: $("#typeBadge"),
+      backupBadge: $("#backupBadge"),
+      repBadge: $("#repBadge"),
+      pointBadge: $("#pointBadge"),
+      questionNumber: $("#questionNumber"),
+      prompt: $("#prompt"),
+      hint: $("#hint"),
+      board: $("#board"),
+      timer: $("#timer"),
+      timerBar: $("#timerBar"),
+      screenSteps: $("#screenSteps"),
+      panelSteps: $("#panelSteps"),
+      scoreboard: $("#scoreboard"),
+      scoreInput: $("#scoreInput"),
+      bonusTable: $("#bonusTable"),
+      hostNote: $("#hostNote"),
+      questionList: $("#questionList"),
+      skipBackups: $("#skipBackups"),
+      teamEditor: $("#teamEditor"),
+      repEditor: $("#repEditor"),
+      answerBtn: $("#answerBtn"),
+      toast: $("#toast"),
+      questionCsv: $("#questionCsv"),
+      csvFileInput: $("#csvFileInput")
+    };
+
+    function defaultTeams() {
+      return NUMERALS.slice(0, 8).map((n, i) => ({ id: `t${i + 1}`, name: `第${n}組`, bonus: 0 }));
+    }
+
+    function load(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : structuredClone(fallback);
+      } catch {
+        return structuredClone(fallback);
+      }
+    }
+
+    function persist() {
+      try {
+        localStorage.setItem(STORE_KEY, JSON.stringify({
+          sig: signature(),
+          teams: state.teams,
+          reps: state.reps,
+          records: state.records,
+          revealed: state.revealed,
+          current: state.current,
+          skipBackups: state.skipBackups
+        }));
+      } catch {}
+    }
+
+    // 題庫指紋：題庫內容變了就不沿用舊的作答紀錄。
+    function signature() {
+      const text = state.questions.map(q => `${q.type}:${q.prompt}`).join("|");
+      let hash = 5381;
+      for (let i = 0; i < text.length; i += 1) hash = ((hash << 5) + hash + text.charCodeAt(i)) | 0;
+      return `${state.questions.length}:${hash}`;
+    }
+
+    // ---------- 題目資訊 ----------
+    function currentQuestion() {
+      return state.questions[state.current] || null;
+    }
+
+    function themes() {
+      return [...new Set(state.questions.map(q => q.theme))];
+    }
+
+    function themeLabel(theme) {
+      const index = themes().indexOf(theme);
+      return `主題${NUMERALS[index] || index + 1}｜${theme}`;
+    }
+
+    function themeQuestions(theme) {
+      return state.questions.filter(q => q.theme === theme);
+    }
+
+    function record(index) {
+      if (!state.records[index]) state.records[index] = { picks: {}, guesses: {}, values: {}, answer: "", mode: "avg", target: null };
+      return state.records[index];
+    }
+
+    function teamColor(team) {
+      const index = state.teams.indexOf(team);
+      return TEAM_COLORS[index % TEAM_COLORS.length];
+    }
+
+    function waveTarget(index) {
+      const r = record(index);
+      if (r.mode === "manual") return r.target || null;
+      const values = state.teams.map(team => r.values[team.id]).filter(Boolean);
+      if (!values.length) return null;
+      return values.reduce((sum, value) => sum + value, 0) / values.length;
+    }
+
+    // 某題某組的得分；未公布答案前一律不計入。
+    function questionPoints(index, team) {
+      if (!state.revealed[index]) return 0;
+      return rawPoints(index, team);
+    }
+
+    function rawPoints(index, team) {
+      const q = state.questions[index];
+      const r = record(index);
+      if (q.type === "smart10") {
+        const picks = r.picks[team.id] || "";
+        let total = 0;
+        for (const letter of picks) total += q.answer.includes(letter) ? q.points : -q.points;
+        return Math.max(0, total);
+      }
+      if (q.type === "guess") {
+        const guess = r.guesses[team.id];
+        return guess && r.answer && guess === r.answer ? q.points : 0;
+      }
+      const value = r.values[team.id];
+      const target = waveTarget(index);
+      if (!value || target == null) return 0;
+      const distance = Math.abs(value - target);
+      if (distance <= 0.5) return q.points;
+      if (distance <= 1.5) return 1;
+      return 0;
+    }
+
+    function teamTotal(team) {
+      let total = Number(team.bonus || 0);
+      state.questions.forEach((q, index) => { total += questionPoints(index, team); });
+      return total;
+    }
+
+    // ---------- 繪製 ----------
+    function renderEmpty(title, message) {
+      el.themeLabel.textContent = "題庫";
+      el.questionLabel.textContent = "CSV";
+      el.modeLabel.textContent = message;
+      el.themeBadge.textContent = "需要 questions.csv";
+      el.typeBadge.textContent = "-";
+      el.backupBadge.hidden = true;
+      el.repBadge.hidden = true;
+      el.pointBadge.textContent = "尚未開始";
+      el.questionNumber.textContent = "CSV";
+      el.prompt.textContent = title;
+      el.hint.textContent = message;
+      el.hint.classList.remove("result");
+      el.board.innerHTML = "";
+      el.screenSteps.innerHTML = "";
+      el.panelSteps.innerHTML = "";
+      el.questionList.innerHTML = "";
+      el.scoreInput.innerHTML = "";
+      el.hostNote.textContent = "";
+      renderTimer();
+      renderScoreboard();
+      renderBonus();
+      renderTeamEditor();
+    }
+
+    function render() {
+      if (!state.questions.length) {
+        renderEmpty("題庫尚未載入", "請確認 questions.csv 與 index.html 放在同一層，或到題庫頁手動載入 CSV。");
+        return;
+      }
+      state.current = clamp(state.current, 0, state.questions.length - 1);
+      const q = currentQuestion();
+      const type = TYPES[q.type];
+      const revealed = Boolean(state.revealed[q.index]);
+      const inTheme = themeQuestions(q.theme);
+      const mains = state.questions.filter(item => !item.backup);
+
+      el.screen.dataset.type = q.type;
+      el.themeLabel.textContent = themeLabel(q.theme);
+      el.questionLabel.textContent = q.backup ? "備用題" : `第 ${mains.indexOf(q) + 1} / ${mains.length} 題`;
+      el.themeBadge.textContent = themeLabel(q.theme);
+      el.typeBadge.textContent = type.label;
+      el.backupBadge.hidden = !q.backup;
+      el.pointBadge.textContent = type.points(q.points);
+      const rep = state.reps[q.theme];
+      el.repBadge.hidden = q.type !== "guess";
+      el.repBadge.textContent = rep ? `台上代表：${rep}` : "請一位代表上台";
+      const mainInTheme = inTheme.filter(item => !item.backup);
+      el.questionNumber.hidden = q.backup;
+      el.questionNumber.textContent = `本主題第 ${mainInTheme.indexOf(q) + 1} / ${mainInTheme.length} 題`;
+      el.prompt.innerHTML = phraseHtml(q.prompt);
+      el.hint.innerHTML = phraseHtml(revealed ? resultText(q) : type.hint);
+      el.hint.classList.toggle("result", revealed);
+      el.board.innerHTML = q.type === "wave" ? spectrumHtml(q, revealed) : optionsHtml(q, revealed);
+
+      document.body.classList.toggle("answer-mode", revealed);
+      el.answerBtn.textContent = revealed ? "隱藏答案" : "公布答案";
+      $("#prevBtn").disabled = neighbor(-1) === null;
+      $("#nextBtn").disabled = neighbor(1) === null;
+
+      renderSteps();
+      renderTimer();
+      renderScoreboard();
+      renderScoreInput();
+      renderBonus();
+      renderHostNote();
+      renderQuestionList();
+      renderTeamEditor();
+      persist();
+      fitQuestion();
+    }
+
+    function resultText(q) {
+      const r = record(q.index);
+      if (q.type === "smart10") {
+        return `正解共 ${q.answer.length} 個：${q.answer.split("").join("、")}`;
+      }
+      if (q.type === "guess") {
+        if (!r.answer) return "請在計分面板點選台上代表的答案";
+        const hits = state.teams.filter(team => r.guesses[team.id] === r.answer).length;
+        const who = state.reps[q.theme] || "代表";
+        return `${who}選了 ${r.answer}．${q.options[LETTERS.indexOf(r.answer)] || ""} —— ${hits} 組猜中！`;
+      }
+      const target = waveTarget(q.index);
+      if (target == null) return "請在計分面板輸入各組答案";
+      const label = r.mode === "manual" ? `目標答案 ${target}` : `全場平均 ${target.toFixed(1)}`;
+      return `${label}：正中 +${q.points}、差 1 格 +1`;
+    }
+
+    function chipsHtml(teams) {
+      if (!teams.length) return "";
+      return `<div class="chips">${teams.map(team => `<span class="chip" style="--c:${teamColor(team)}">${escapeHtml(team.name)}</span>`).join("")}</div>`;
+    }
+
+    function optionsHtml(q, revealed) {
+      const r = record(q.index);
+      const cards = q.options.map((text, k) => {
+        const letter = LETTERS[k];
+        let cls = "option";
+        let extra = "";
+        if (revealed && q.type === "smart10") {
+          cls += q.answer.includes(letter) ? " correct" : " wrong";
+          const count = state.teams.filter(team => (r.picks[team.id] || "").includes(letter)).length;
+          if (count) extra = `<span class="count">${count} 組選</span>`;
+        }
+        if (revealed && q.type === "guess") {
+          if (r.answer) cls += r.answer === letter ? " correct" : " dim";
+          extra = chipsHtml(state.teams.filter(team => r.guesses[team.id] === letter));
+        }
+        return `<div class="${cls}"><span class="letter">${letter}</span><span class="text">${phraseHtml(text)}</span>${extra}</div>`;
+      });
+      return `<div class="options ${q.type === "guess" ? "five" : ""}">${cards.join("")}</div>`;
+    }
+
+    function spectrumHtml(q, revealed) {
+      const r = record(q.index);
+      const target = revealed ? waveTarget(q.index) : null;
+      const cells = [1, 2, 3, 4, 5].map(value => {
+        let cls = "cell";
+        if (target != null) {
+          const distance = Math.abs(value - target);
+          if (distance <= 0.5) cls += " hit";
+          else if (distance <= 1.5) cls += " near";
+        }
+        const label = q.scale[value - 1] || "";
+        const teams = revealed ? state.teams.filter(team => r.values[team.id] === value) : [];
+        return `<div class="${cls}"><span class="num">${value}</span>${label ? `<span class="label">${phraseHtml(label)}</span>` : ""}${chipsHtml(teams)}</div>`;
+      });
+      const marker = target != null
+        ? `<div class="target" style="left:${((target - 0.5) / 5) * 100}%"><span>${r.mode === "manual" ? `目標 ${target}` : `平均 ${target.toFixed(1)}`}</span></div>`
+        : "";
+      const ends = q.left || q.right
+        ? `<div class="spectrum-ends"><span>◀ 1　${phraseHtml(q.left)}</span><span>${phraseHtml(q.right)}　5 ▶</span></div>`
+        : "";
+      return `<div class="spectrum">${ends}<div class="spectrum-track">${cells.join("")}${marker}</div></div>`;
+    }
+
+    function renderSteps() {
+      const q = currentQuestion();
+      const html = q ? TYPES[q.type].steps.map(([id, label, seconds]) =>
+        `<button data-step="${id}" class="${state.step === id ? "primary" : "good"}">${label} ${seconds} 秒</button>`
+      ).join("") : "";
+      el.screenSteps.innerHTML = html;
+      el.panelSteps.innerHTML = html;
+    }
+
+    function renderTimer() {
+      el.timer.textContent = Math.max(0, state.timerLeft);
+      el.timer.classList.toggle("urgent", state.timerRunning && state.timerLeft <= 5);
+      const used = state.timerTotal ? (state.timerTotal - state.timerLeft) / state.timerTotal : 0;
+      el.timerBar.style.width = `${clamp(used * 100, 0, 100)}%`;
+      const q = currentQuestion();
+      const step = q && TYPES[q.type].steps.find(([id]) => id === state.step);
+      el.modeLabel.textContent = step ? `${step[1]}${state.timerRunning ? "中" : "（暫停）"}` : "準備中";
+    }
+
+    function renderScoreboard() {
+      const q = currentQuestion();
+      el.scoreboard.style.setProperty("--n", state.teams.length);
+      el.scoreboard.innerHTML = state.teams.map(team => {
+        const delta = q ? questionPoints(q.index, team) : 0;
+        return `<div class="score-card" style="--c:${teamColor(team)}">
+          <div class="team-name">${phraseHtml(team.name)}</div>
+          <span class="delta">${delta ? `+${delta}` : ""}</span>
+          <div class="score">${teamTotal(team)}</div>
+        </div>`;
+      }).join("");
+    }
+
+    function pickerButtons(act, values, isOn, extraClass = () => "", teamId = "") {
+      return values.map(value =>
+        `<button data-act="${act}" data-team="${teamId}" data-val="${value}" class="${isOn(value) ? "on" : ""} ${extraClass(value)}">${value}</button>`
+      ).join("");
+    }
+
+    function renderScoreInput() {
+      const q = currentQuestion();
+      if (!q) return;
+      const r = record(q.index);
+      const revealed = Boolean(state.revealed[q.index]);
+      const letters = LETTERS.slice(0, q.options.length).split("");
+      let head = "";
+      let rows = "";
+
+      const rowHtml = (team, pickers) => {
+        const points = rawPoints(q.index, team);
+        return `<div class="score-row" style="--c:${teamColor(team)}">
+          <div class="head"><span><span class="dot"></span>${escapeHtml(team.name)}</span>
+            ${revealed ? `<b>+${points}</b>` : `<span class="pending">公布後計分</span>`}</div>
+          <div class="pickers">${pickers}</div>
+        </div>`;
+      };
+
+      // 主持面板可能也在投影上：公布前不顯示正解、對錯顏色、代表答案與預估分數。
+      const secret = (filled, label) => filled
+        ? `<p class="muted">✓ 已記錄${label}（公布前隱藏；點其他選項可改選）</p>`
+        : `<p class="muted">尚未輸入${label}</p>`;
+      if (q.type === "smart10") {
+        head = `<p class="muted">點選各組寫下的選項。</p>`;
+        rows = state.teams.map(team => {
+          const picks = r.picks[team.id] || "";
+          return rowHtml(team, pickerButtons("pick", letters, v => picks.includes(v), v => (revealed ? (q.answer.includes(v) ? "ok" : "bad") : ""), team.id));
+        }).join("");
+      } else if (q.type === "guess") {
+        head = `<h3>台上代表的答案</h3>
+          <div class="pickers" style="margin-bottom:.3rem">${pickerButtons("answer", letters, v => revealed && r.answer === v)}</div>
+          ${revealed ? "" : secret(r.answer, "代表答案")}
+          <h3>各組猜的答案</h3>`;
+        rows = state.teams.map(team =>
+          rowHtml(team, pickerButtons("guess", letters, v => r.guesses[team.id] === v, v => (revealed && r.answer ? (v === r.answer ? "ok" : "bad") : ""), team.id))
+        ).join("");
+      } else {
+        const target = waveTarget(q.index);
+        const targetText = !revealed
+          ? (r.mode === "manual" ? secret(r.target, "指定答案") : `<p class="muted">平均於公布後顯示</p>`)
+          : `<p class="muted">${target == null ? "尚無目標" : r.mode === "manual" ? `目標 ${target}` : `全場平均 ${target.toFixed(2)}`}</p>`;
+        head = `<h3>計分目標</h3>
+          <div class="pickers" style="margin-bottom:.4rem">
+            <button data-act="mode" data-val="avg" class="${r.mode !== "manual" ? "on" : ""}">全場平均</button>
+            <button data-act="mode" data-val="manual" class="${r.mode === "manual" ? "on" : ""}">指定答案（如代表答案）</button>
+          </div>
+          ${r.mode === "manual" ? `<div class="pickers" style="margin-bottom:.3rem">${pickerButtons("target", [1, 2, 3, 4, 5], v => revealed && r.target === v)}</div>` : ""}
+          ${targetText}
+          <h3>各組決定的數字</h3>`;
+        rows = state.teams.map(team =>
+          rowHtml(team, pickerButtons("value", [1, 2, 3, 4, 5], v => r.values[team.id] === v, () => "", team.id))
+        ).join("");
+      }
+      const tip = revealed ? "" : `<p class="muted">按「公布答案」後，本題分數才會計入計分板。</p>`;
+      el.scoreInput.innerHTML = `${head}<div class="score-table">${rows}</div>${tip}`;
+    }
+
+    function renderBonus() {
+      el.bonusTable.innerHTML = state.teams.map((team, index) => `
+        <div class="bonus-row" style="--c:${teamColor(team)}">
+          <span><span class="dot"></span>${escapeHtml(team.name)}${team.bonus ? `（${team.bonus > 0 ? "+" : ""}${team.bonus}）` : ""}</span>
+          <strong>${teamTotal(team)}</strong>
+          <button class="small warn" data-bonus="${index}" data-delta="-1">−1</button>
+          <button class="small good" data-bonus="${index}" data-delta="1">+1</button>
+        </div>`).join("");
+    }
+
+    function renderHostNote() {
+      const q = currentQuestion();
+      if (!q) return;
+      let answer = "";
+      if (q.type === "smart10") {
+        // 十分機靈的正解與提示（提示常含答案）預設隱藏，避免投影時被看到。
+        if (!state.revealed[q.index] && !state.peek) {
+          el.hostNote.innerHTML = `<button id="peekAnswer" class="small">顯示正解與提示（注意畫面是否在投影）</button>`;
+          return;
+        }
+        answer = `<div class="host-answer">正解：${q.answer.split("").map(letter => `${letter} ${escapeHtml(q.options[LETTERS.indexOf(letter)] || "")}`).join("、")}</div>`;
+      } else if (q.type === "guess") {
+        answer = `<div class="host-answer">請代表偷偷告訴你答案，再到「計分」點選。</div>`;
+      } else {
+        answer = `<div class="host-answer">數到三一起比手指公開，再讓各組協商。</div>`;
+      }
+      el.hostNote.innerHTML = `${answer}${q.note ? `<div class="host-note">${escapeHtml(q.note)}</div>` : ""}`;
+    }
+
+    function renderQuestionList() {
+      el.skipBackups.checked = state.skipBackups;
+      el.questionList.innerHTML = themes().map(theme => `
+        <div class="qgroup">
+          <h3>${escapeHtml(themeLabel(theme))}${state.reps[theme] ? `・代表 ${escapeHtml(state.reps[theme])}` : ""}</h3>
+          ${themeQuestions(theme).map(q => `
+            <button class="qitem ${q.index === state.current ? "active" : ""} ${q.backup ? "is-backup" : ""}" data-jump="${q.index}" title="${escapeAttr(q.prompt)}">
+              <span class="tag ${q.type}">${TYPES[q.type].label}</span>
+              <span class="t">${phraseHtml(q.prompt)}</span>
+              <span class="flag">${q.backup ? "備用" : ""}${state.revealed[q.index] ? " ✓" : ""}</span>
+            </button>`).join("")}
+        </div>`).join("");
+    }
+
+    function renderTeamEditor() {
+      el.teamEditor.innerHTML = state.teams.map((team, index) => `
+        <div class="team-line">
+          <input value="${escapeAttr(team.name)}" data-team-name="${index}" aria-label="隊伍名稱">
+          <input type="number" value="${Number(team.bonus || 0)}" data-team-bonus="${index}" aria-label="額外加減分">
+          <button class="small warn" data-remove-team="${index}">刪除</button>
+        </div>`).join("");
+      el.repEditor.innerHTML = themes().map(theme => `
+        <div class="field"><label>${escapeHtml(themeLabel(theme))}</label>
+          <input value="${escapeAttr(state.reps[theme] || "")}" data-rep="${escapeAttr(theme)}" placeholder="代表姓名（可空白）"></div>`).join("");
+    }
+
+    // ---------- 計時 ----------
+    function resetStep() {
+      stopTimer();
+      const q = currentQuestion();
+      const first = q ? TYPES[q.type].steps[0] : null;
+      state.step = "";
+      state.timerTotal = first ? first[2] : 0;
+      state.timerLeft = state.timerTotal;
+    }
+
+    function startStep(id) {
+      const q = currentQuestion();
+      const step = q && TYPES[q.type].steps.find(([stepId]) => stepId === id);
+      if (!step) return;
+      state.step = id;
+      state.timerTotal = step[2];
+      state.timerLeft = step[2];
+      startTimer();
+      renderSteps();
+      renderTimer();
+    }
+
+    function startTimer() {
+      stopTimer();
+      if (state.timerLeft <= 0) return;
+      state.timerRunning = true;
+      state.timerId = window.setInterval(() => {
+        state.timerLeft -= 1;
+        if (state.timerLeft <= 0) {
+          state.timerLeft = 0;
+          stopTimer();
+          beep();
+          toast("時間到");
+        }
+        renderTimer();
+      }, 1000);
+      renderTimer();
+    }
+
+    function stopTimer() {
+      state.timerRunning = false;
+      window.clearInterval(state.timerId);
+      state.timerId = null;
+    }
+
+    function togglePause() {
+      if (state.timerRunning) stopTimer();
+      else if (state.step) startTimer();
+      renderTimer();
+    }
+
+    function beep() {
+      try {
+        const ctx = beep.ctx || (beep.ctx = new AudioContext());
+        [0, 0.28].forEach(offset => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.frequency.value = 880;
+          gain.gain.setValueAtTime(0.22, ctx.currentTime + offset);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.25);
+          osc.connect(gain).connect(ctx.destination);
+          osc.start(ctx.currentTime + offset);
+          osc.stop(ctx.currentTime + offset + 0.25);
+        });
+      } catch {}
+    }
+
+    // ---------- 換題 ----------
+    function neighbor(delta) {
+      let index = state.current + delta;
+      while (index >= 0 && index < state.questions.length) {
+        if (!state.skipBackups || !state.questions[index].backup) return index;
+        index += delta;
+      }
+      return null;
+    }
+
+    function go(delta) {
+      const index = neighbor(delta);
+      if (index === null) return toast(delta > 0 ? "已經是最後一題" : "已經是第一題");
+      jumpTo(index);
+    }
+
+    function jumpTo(index) {
+      if (!state.questions.length) return;
+      state.current = clamp(index, 0, state.questions.length - 1);
+      document.body.classList.remove("rules-mode");
+      $("#rulesBtn").textContent = "規則頁";
+      state.peek = false;
+      resetStep();
+      render();
+    }
+
+    function toggleAnswer() {
+      const q = currentQuestion();
+      if (!q) return;
+      state.revealed[q.index] = !state.revealed[q.index];
+      if (state.revealed[q.index]) {
+        stopTimer();
+        const r = record(q.index);
+        if (q.type === "guess" && !r.answer) toast("提醒：尚未輸入代表的答案");
+        if (q.type === "wave" && waveTarget(q.index) == null) toast("提醒：尚未輸入各組答案");
+      }
+      render();
+    }
+
+    // ---------- 計分輸入 ----------
+    el.scoreInput.addEventListener("click", event => {
+      const button = event.target.closest("[data-act]");
+      const q = currentQuestion();
+      if (!button || !q) return;
+      const r = record(q.index);
+      const { act, team, val } = button.dataset;
+      if (act === "pick") {
+        const picks = r.picks[team] || "";
+        r.picks[team] = picks.includes(val)
+          ? picks.replace(val, "")
+          : LETTERS.split("").filter(letter => picks.includes(letter) || letter === val).join("");
+      } else if (act === "guess") {
+        r.guesses[team] = r.guesses[team] === val ? "" : val;
+      } else if (act === "answer") {
+        r.answer = r.answer === val ? "" : val;
+      } else if (act === "value") {
+        r.values[team] = r.values[team] === Number(val) ? null : Number(val);
+      } else if (act === "mode") {
+        r.mode = val;
+      } else if (act === "target") {
+        r.target = r.target === Number(val) ? null : Number(val);
+      }
+      render();
+    });
+
+    el.bonusTable.addEventListener("click", event => {
+      const button = event.target.closest("[data-bonus]");
+      if (!button) return;
+      const team = state.teams[Number(button.dataset.bonus)];
+      team.bonus = Number(team.bonus || 0) + Number(button.dataset.delta);
+      render();
+    });
+
+    // ---------- CSV ----------
+    function parseCsv(text) {
+      const rows = [];
+      let row = [];
+      let field = "";
+      let quoted = false;
+      for (let index = 0; index < text.length; index += 1) {
+        const char = text[index];
+        const next = text[index + 1];
+        if (quoted) {
+          if (char === '"' && next === '"') {
+            field += '"';
+            index += 1;
+          } else if (char === '"') {
+            quoted = false;
+          } else {
+            field += char;
+          }
+        } else if (char === '"') {
+          quoted = true;
+        } else if (char === ",") {
+          row.push(field);
+          field = "";
+        } else if (char === "\n") {
+          row.push(field);
+          rows.push(row);
+          row = [];
+          field = "";
+        } else if (char !== "\r") {
+          field += char;
+        }
+      }
+      if (field || row.length) {
+        row.push(field);
+        rows.push(row);
+      }
+      return rows.filter(item => item.some(cell => String(cell).trim() !== ""));
+    }
+
+    function splitList(value) {
+      return String(value || "").split("|").map(item => item.trim());
+    }
+
+    function questionsFromCsv(text) {
+      const rows = parseCsv(text.replace(/^﻿/, ""));
+      if (rows.length < 2) throw new Error("CSV 至少需要標題列與一筆題目");
+      const headers = rows[0].map(item => item.trim());
+      return rows.slice(1).map(row => {
+        const item = {};
+        headers.forEach((header, index) => item[header] = (row[index] || "").trim());
+        const type = TYPES[item.type] ? item.type : "smart10";
+        return {
+          theme: item.theme || "未分類",
+          type,
+          backup: /^(1|true|yes|y|備用)$/i.test(item.backup || ""),
+          prompt: item.prompt || "",
+          options: type === "wave" ? [] : splitList(item.options).filter(Boolean).slice(0, 10),
+          answer: (item.answer || "").toUpperCase().replace(/[^A-J]/g, ""),
+          left: item.left || "",
+          right: item.right || "",
+          scale: item.scale ? splitList(item.scale) : [],
+          points: Number(item.points) || TYPES[type].defaultPoints,
+          note: item.note || ""
+        };
+      }).filter(q => q.prompt && (q.type === "wave" || q.options.length))
+        .map((q, index) => ({ ...q, index }));
+    }
+
+    function csvEscape(value) {
+      const text = String(value ?? "");
+      return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    }
+
+    function questionsToCsv(questions) {
+      const rows = questions.map(q => [
+        q.theme, q.type, q.backup ? "1" : "", q.prompt, q.options.join("|"), q.answer,
+        q.left, q.right, q.scale.join("|"), q.points, q.note
+      ].map(csvEscape).join(","));
+      return [CSV_HEADERS.join(","), ...rows].join("\n");
+    }
+
+    // restore=true：題庫跟上次相同時，沿用 localStorage 的作答紀錄與進度（重新整理不怕掉分）。
+    function applyQuestions(questions, restore) {
+      state.questions = questions;
+      if (restore && saved.sig === signature()) {
+        state.records = saved.records || {};
+        state.revealed = saved.revealed || {};
+        state.current = Number(saved.current) || 0;
+      } else {
+        state.records = {};
+        state.revealed = {};
+        state.current = 0;
+      }
+      resetStep();
+      render();
+    }
+
+    async function loadQuestionsCsvFromUrl(restore = false) {
+      renderEmpty("正在載入題庫", "正在讀取 questions.csv，請稍候。");
+      try {
+        const response = await fetch("questions.csv", { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const questions = questionsFromCsv(await response.text());
+        if (!questions.length) throw new Error("CSV 沒有可用題目");
+        applyQuestions(questions, restore);
+        toast(`已載入 questions.csv：${questions.length} 題`);
+      } catch (error) {
+        // fetch() 在 file:// 下會被擋，改用 questions.js 內建題庫。
+        if (typeof window.QUESTIONS_CSV === "string") {
+          try {
+            const questions = questionsFromCsv(window.QUESTIONS_CSV);
+            if (questions.length) {
+              applyQuestions(questions, restore);
+              toast(`已載入內建題庫：${questions.length} 題`);
+              return;
+            }
+          } catch {}
+        }
+        state.questions = [];
+        renderEmpty("無法載入題庫", "請確認 questions.csv 與 index.html 放在同一層；若直接開啟檔案，請改用本機伺服器或到題庫頁手動選檔。");
+        toast("無法自動讀取 CSV，可在題庫頁手動選檔");
+      }
+    }
+
+    function importCsvText(text, sourceLabel) {
+      try {
+        const questions = questionsFromCsv(text);
+        if (!questions.length) throw new Error("沒有可用題目");
+        applyQuestions(questions, false);
+        toast(`${sourceLabel}：${questions.length} 題`);
+      } catch (error) {
+        toast(`CSV 格式錯誤：${error.message}`);
+      }
+    }
+
+    // ---------- 工具 ----------
+    function toast(message) {
+      el.toast.textContent = message;
+      el.toast.classList.add("show");
+      window.clearTimeout(toast.id);
+      toast.id = window.setTimeout(() => el.toast.classList.remove("show"), 1600);
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char]));
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value).replace(/`/g, "&#096;");
+    }
+
+    // 依中文詞語切分，在詞與詞之間插入 <wbr>；搭配 CSS keep-all，避免「娛／樂」這種詞中斷行。
+    const segmenter = typeof Intl !== "undefined" && Intl.Segmenter ? new Intl.Segmenter("zh-Hant", { granularity: "word" }) : null;
+    const NO_BREAK_BEFORE = /^[，。、：；？！）」』》】…—／%％·・]/;
+    const NO_BREAK_AFTER = /[（「『《【]$/;
+    const CJK = /[\u3000-\u9fff\uff00-\uffef]/;
+
+    function phraseHtml(value) {
+      const text = String(value ?? "");
+      if (!segmenter) return escapeHtml(text).replace(/([，、：；。？！／）」])/g, "$1<wbr>");
+      const parts = [...segmenter.segment(text)].map(item => item.segment);
+      let html = "";
+      parts.forEach((part, index) => {
+        html += escapeHtml(part);
+        const next = parts[index + 1];
+        if (next === undefined) return;
+        const touchesCjk = CJK.test(part.slice(-1)) || CJK.test(next[0]);
+        if (touchesCjk && !NO_BREAK_BEFORE.test(next) && !NO_BREAK_AFTER.test(part)) html += "<wbr>";
+      });
+      return html;
+    }
+
+    function applyPhrases(root) {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      while (walker.nextNode()) if (walker.currentNode.nodeValue.trim()) nodes.push(walker.currentNode);
+      nodes.forEach(node => {
+        const span = document.createElement("span");
+        span.innerHTML = phraseHtml(node.nodeValue);
+        node.replaceWith(...span.childNodes);
+      });
+    }
+
+    // 題目區放不下時，整體縮小字級（--fit），確保投影上不會有字被切掉或需要捲動。
+    function fitQuestion() {
+      const box = document.querySelector(".question");
+      if (!box || !box.offsetHeight) return;
+      let fit = 1;
+      box.style.setProperty("--fit", fit);
+      while (fit > 0.5 && (box.scrollHeight > box.clientHeight + 1 || box.scrollWidth > box.clientWidth + 1)) {
+        fit = Math.round((fit - 0.04) * 100) / 100;
+        box.style.setProperty("--fit", fit);
+      }
+    }
+
+    function toggleFullscreen() {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen();
+    }
+
+    // ---------- 事件 ----------
+    document.querySelectorAll(".tabs button").forEach(button => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".tabs button").forEach(item => item.classList.toggle("active", item === button));
+        document.querySelectorAll(".panel-page").forEach(page => page.hidden = page.dataset.page !== button.dataset.tab);
+      });
+    });
+
+    [el.screenSteps, el.panelSteps].forEach(container => container.addEventListener("click", event => {
+      const button = event.target.closest("[data-step]");
+      if (button) startStep(button.dataset.step);
+    }));
+
+    el.questionList.addEventListener("click", event => {
+      const button = event.target.closest("[data-jump]");
+      if (button) jumpTo(Number(button.dataset.jump));
+    });
+
+    el.hostNote.addEventListener("click", event => {
+      if (!event.target.closest("#peekAnswer")) return;
+      state.peek = true;
+      renderHostNote();
+    });
+
+    el.skipBackups.addEventListener("change", () => {
+      state.skipBackups = el.skipBackups.checked;
+      render();
+    });
+
+    el.teamEditor.addEventListener("click", event => {
+      const button = event.target.closest("[data-remove-team]");
+      if (!button) return;
+      if (state.teams.length <= 1) return toast("至少保留一組");
+      const team = state.teams[Number(button.dataset.removeTeam)];
+      if (!window.confirm(`確定刪除「${team.name}」？該組的作答紀錄會一起移除。`)) return;
+      state.teams.splice(Number(button.dataset.removeTeam), 1);
+      render();
+    });
+
+    $("#prevBtn").addEventListener("click", () => go(-1));
+    $("#nextBtn").addEventListener("click", () => go(1));
+    el.answerBtn.addEventListener("click", toggleAnswer);
+    $("#rulesBtn").addEventListener("click", () => {
+      document.body.classList.toggle("rules-mode");
+      $("#rulesBtn").textContent = document.body.classList.contains("rules-mode") ? "題目頁" : "規則頁";
+      fitQuestion();
+    });
+    $("#showRulesPage").addEventListener("click", () => {
+      document.body.classList.add("rules-mode");
+      $("#rulesBtn").textContent = "題目頁";
+    });
+    $("#presentationBtn").addEventListener("click", () => {
+      document.body.classList.toggle("presentation");
+      $("#presentationBtn").textContent = document.body.classList.contains("presentation") ? "控制面板" : "放映模式";
+    });
+    $("#fullscreenBtn").addEventListener("click", toggleFullscreen);
+    $("#pauseTimer").addEventListener("click", togglePause);
+    $("#resetTimer").addEventListener("click", () => {
+      stopTimer();
+      state.timerLeft = state.timerTotal;
+      renderTimer();
+    });
+
+    $("#saveTeams").addEventListener("click", () => {
+      el.teamEditor.querySelectorAll("[data-team-name]").forEach(input => {
+        const index = Number(input.dataset.teamName);
+        state.teams[index].name = input.value.trim() || `第${NUMERALS[index] || index + 1}組`;
+      });
+      el.teamEditor.querySelectorAll("[data-team-bonus]").forEach(input => {
+        state.teams[Number(input.dataset.teamBonus)].bonus = Number(input.value || 0);
+      });
+      render();
+      toast("隊伍已儲存");
+    });
+    $("#addTeam").addEventListener("click", () => {
+      const used = new Set(state.teams.map(team => team.id));
+      let n = state.teams.length + 1;
+      while (used.has(`t${n}`)) n += 1;
+      state.teams.push({ id: `t${n}`, name: `第${NUMERALS[state.teams.length] || state.teams.length + 1}組`, bonus: 0 });
+      render();
+    });
+    $("#saveReps").addEventListener("click", () => {
+      el.repEditor.querySelectorAll("[data-rep]").forEach(input => {
+        state.reps[input.dataset.rep] = input.value.trim();
+      });
+      render();
+      toast("代表已儲存");
+    });
+
+    $("#resetScores").addEventListener("click", () => {
+      if (!window.confirm("確定要整場重設嗎？所有作答紀錄、公布狀態與額外加減分都會清空，此動作無法復原。")) return;
+      state.records = {};
+      state.revealed = {};
+      state.teams.forEach(team => team.bonus = 0);
+      state.current = 0;
+      resetStep();
+      render();
+      toast("已整場重設");
+    });
+    $("#exportScores").addEventListener("click", async () => {
+      const payload = JSON.stringify({
+        exportedAt: new Date().toISOString(),
+        teams: state.teams.map(team => ({ name: team.name, total: teamTotal(team), bonus: Number(team.bonus || 0) })),
+        records: state.records,
+        revealed: state.revealed
+      }, null, 2);
+      await navigator.clipboard.writeText(payload).catch(() => {});
+      el.questionCsv.value = payload;
+      toast("分數 JSON 已複製並放到題庫頁文字框");
+    });
+
+    $("#copyQuestions").addEventListener("click", () => {
+      if (!state.questions.length) return toast("尚未載入題庫");
+      el.questionCsv.value = questionsToCsv(state.questions);
+    });
+    $("#importQuestions").addEventListener("click", () => {
+      if (!window.confirm("套用新題庫會清空所有作答紀錄，確定嗎？")) return;
+      importCsvText(el.questionCsv.value, "CSV 題庫已套用");
+    });
+    $("#reloadCsv").addEventListener("click", () => {
+      if (!window.confirm("重新讀取 questions.csv 會清空所有作答紀錄，確定嗎？")) return;
+      loadQuestionsCsvFromUrl(false);
+    });
+    el.csvFileInput.addEventListener("change", async event => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      importCsvText(await file.text(), `已載入 ${file.name}`);
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.target.matches("input, textarea, select")) return;
+      if (event.key === "ArrowRight") go(1);
+      if (event.key === "ArrowLeft") go(-1);
+      if (event.key.toLowerCase() === "a") toggleAnswer();
+      if (event.key.toLowerCase() === "f") toggleFullscreen();
+      if (event.code === "Space") {
+        event.preventDefault();
+        togglePause();
+      }
+    });
+
+    applyPhrases($("#rulesScreen"));
+    let fitFrame = 0;
+    new ResizeObserver(() => {
+      cancelAnimationFrame(fitFrame);
+      fitFrame = requestAnimationFrame(fitQuestion);
+    }).observe(el.screen);
+    if (document.fonts) document.fonts.ready.then(fitQuestion);
+
+    loadQuestionsCsvFromUrl(true);
+  </script>
+</body>
+</html>

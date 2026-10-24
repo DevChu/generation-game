@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <title>加入跨世代團康</title>
+  <link rel="stylesheet" href="live.css">
+</head>
+<body>
+  <main>
+    <section id="joinPanel" class="panel join-card">
+      <h1>加入跨世代團康</h1>
+      <form id="joinForm" class="form-grid">
+        <div>
+          <label for="roomInput">四位數房號</label>
+          <input id="roomInput" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" required placeholder="例如 7382">
+        </div>
+        <div>
+          <label for="nicknameInput">你的暱稱</label>
+          <input id="nicknameInput" maxlength="24" required autocomplete="nickname" placeholder="最多 24 個字">
+        </div>
+        <button class="primary" type="submit">加入遊戲</button>
+      </form>
+      <p id="joinError" class="error"></p>
+    </section>
+
+    <section id="gamePanel" class="shell hidden">
+      <header class="topbar">
+        <div>
+          <strong id="playerName"></strong>
+          <div class="muted">房號 <span id="playerRoom"></span></div>
+        </div>
+        <span class="pill"><i id="connectionDot" class="dot"></i><span id="connectionText">正在連線</span></span>
+      </header>
+
+      <section class="panel">
+        <div id="waitingState" class="status-card">
+          <strong>已加入，請看大螢幕</strong>
+          <span class="muted">主持人開始後，題目會自動出現在這裡。</span>
+        </div>
+
+        <div id="answerState" class="hidden">
+          <div id="playerMeta" class="question-meta"></div>
+          <h1 id="playerQuestion" class="question"></h1>
+          <div id="answerGrid" class="answer-grid"></div>
+          <button id="submitMulti" class="primary hidden" style="width:100%;margin-top:14px">送出答案</button>
+          <p id="answerHint" class="muted"></p>
+          <p id="answerError" class="error"></p>
+        </div>
+
+        <div id="lockedState" class="status-card hidden">
+          <strong>作答已鎖定</strong>
+          <span class="muted">請看大螢幕，結果即將公布。</span>
+        </div>
+
+        <div id="revealedState" class="hidden">
+          <div class="status-card">
+            <strong>結果公布</strong>
+            <span id="revealText" class="muted">請看大螢幕上的全場分布。</span>
+          </div>
+          <div id="revealOptions" class="options" style="margin-top:14px"></div>
+        </div>
+
+        <div id="endedState" class="status-card hidden">
+          <strong>活動結束，謝謝參加！</strong>
+          <span class="muted">期待下次再一起玩。</span>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="live-questions.js"></script>
+  <script src="live-common.js"></script>
+  <script src="live-player.js"></script>
+</body>
+</html>

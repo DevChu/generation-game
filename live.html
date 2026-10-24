@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>全場連線模式｜跨世代團康</title>
+  <link rel="stylesheet" href="live.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <h1 class="brand">跨世代團康・全場連線</h1>
+      <span class="pill"><i id="connectionDot" class="dot"></i><span id="connectionText">準備連線</span></span>
+    </header>
+
+    <section id="setupPanel" class="panel">
+      <h2>建立現場房間</h2>
+      <p class="muted">參加者掃描 QR Code、輸入暱稱後即可同步回答 5 題。</p>
+      <button id="createRoom" class="primary">建立新房間</button>
+      <p id="setupError" class="error"></p>
+    </section>
+
+    <section id="roomPanel" class="hidden">
+      <div class="panel lobby">
+        <div>
+          <div class="muted">請掃描 QR Code，或輸入房號</div>
+          <div id="roomCode" class="room-code">----</div>
+          <div id="joinUrl" class="join-url muted"></div>
+          <div class="stats">
+            <div class="stat"><span class="muted">已加入</span><strong id="joinedCount">0</strong></div>
+            <div class="stat"><span class="muted">本題已作答</span><strong id="answeredCount">0</strong></div>
+          </div>
+        </div>
+        <div id="qrCode" class="qr-wrap"></div>
+      </div>
+
+      <section id="questionPanel" class="panel" style="margin-top:18px">
+        <div id="waitingMessage">
+          <h2>等待大家加入</h2>
+          <p class="muted">確認人數後，按下方「開始第 1 題」。</p>
+        </div>
+        <div id="questionContent" class="hidden">
+          <div id="questionMeta" class="question-meta"></div>
+          <h2 id="questionText" class="question"></h2>
+          <div id="questionOptions" class="options"></div>
+          <div id="resultBars" class="bars hidden"></div>
+        </div>
+      </section>
+
+      <section class="panel host-controls">
+        <div class="actions">
+          <button id="startQuestion" class="primary">開始第 1 題</button>
+          <button id="lockQuestion" class="secondary" disabled>鎖定作答</button>
+          <button id="revealQuestion" class="primary" disabled>公布結果</button>
+          <button id="nextQuestion" class="secondary" disabled>下一題</button>
+          <button id="endRoom" class="danger">結束活動</button>
+          <button id="fullscreen" class="ghost">全螢幕</button>
+        </div>
+        <p id="hostHint" class="muted">建立房間後即可邀請參加者。</p>
+        <p id="hostError" class="error"></p>
+      </section>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script src="supabase-config.js"></script>
+  <script src="live-questions.js"></script>
+  <script src="live-common.js"></script>
+  <script src="live-host.js"></script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+# 跨世代團康挑戰賽
+
+投影用的單頁 HTML 團康遊戲（仿 hitster_group 架構）：5 個主題 × 每主題 5 題（4 題正式＋1 題備用），三種遊戲輪流進行，預設 8 組，約 60 分鐘。
+
+另有適合約 100 人、不分組的「全場連線模式」：參加者掃描 QR Code，以手機同步回答 5 題，主持端即時顯示加入／作答人數，鎖定後公布答案分布。
+
+## 全場連線模式
+
+- `live.html`：主持人投影與控場頁
+- `play.html`：參加者手機作答頁
+- `live-questions.js`：全場模式使用的 5 題
+- `supabase/schema.sql`：Supabase 資料表、RPC 與安全規則
+- `supabase-config.js`：瀏覽器可公開的 Supabase Project URL 與 Publishable key
+
+### 首次設定
+
+1. 開啟 Supabase Dashboard 的 **SQL Editor**。
+2. 將 `supabase/schema.sql` 全文貼入並按 **Run**。此檔案可重複執行。
+3. 將網站部署到 GitHub Pages。
+4. 主持人開啟 `live.html` 並按「建立新房間」。
+5. 參加者掃描畫面上的 QR Code、輸入暱稱後加入。
+
+請勿把 Supabase `service_role` key、Secret key、資料庫密碼或 connection string 放進此 repository。Publishable key 是設計給瀏覽器使用的；資料存取由 `schema.sql` 的 RLS 與 RPC 驗證限制。
+
+### GitHub Pages
+
+在 repository 的 **Settings → Pages**，將部署來源設為 **Deploy from a branch**，選擇 `main` 與 `/ (root)`。部署完成後：
+
+- 原版分組模式：`https://devchu.github.io/generation-game/`
+- 全場主持模式：`https://devchu.github.io/generation-game/live.html`
+- 手機作答頁會由主持頁自動產生正確的 QR Code。
+
+正式活動前，建議先以 5～10 支手機完整測試加入、作答、鎖定、公布與下一題流程。
+
+## 三種遊戲與計分
+
+| 遊戲 | 玩法 | 計分 |
+|---|---|---|
+| 十分機靈 | 有客觀正解，整組合作把認為正確的選項全部寫下 | 選對一個 +1、選錯一個 −1，每題最低 0 分 |
+| 心有靈犀 | 台上代表偷偷選一個答案，各組猜他會選什麼 | 猜中 +3 |
+| 所見略同 | 每人先選 1–5 → 公開 → 組內討論 → 決定整組數字 | 與全場平均差 ≤0.5 +3、≤1.5 +1（也可改成「指定答案」，例如用代表的答案當目標） |
+
+每題「公布答案」之後，分數才會計入計分板，所以主持人可以先輸入各組答案，公布時大家才一起看到分數。主持面板可能也會投影出去，所以公布前面板不會顯示正解、對錯顏色、代表的答案或預估分數；十分機靈的正解與提示要按「顯示正解與提示」才會出現。「額外加減分」可用來給協商獎、表現獎等。
+
+## 使用
+
+直接點開 `index.html` 即可（`file://` 下會改用 `questions.js` 內建題庫）。也可以用本機伺服器：
+
+```bash
+python3 -m http.server 4173
+```
+
+主持流程：
+
+1. 「隊伍」頁確認 8 組名稱，並填上各主題「心有靈犀」代表（可空白）。
+2. 投影「規則頁」介紹三種遊戲。
+3. 每題按畫面右下的步驟按鈕計時（例如 所見略同：個人選擇 15 秒 → 組內討論 60 秒 → 最後決定 10 秒）。
+4. 到「計分」頁點選各組答案（心有靈犀要先點代表的答案）。
+5. 按「公布答案」（快捷鍵 `A`），投影會顯示正解、各組分佈與得分。
+
+「上一題／下一題」預設略過備用題；時間有剩時可從「流程 → 題目列表」直接點備用題。作答紀錄存在瀏覽器 localStorage，重新整理不會掉分；「整場重設」會清空。
+
+快捷鍵：`←/→` 換題、`A` 公布答案、`空白鍵` 暫停計時、`F` 全螢幕。
+
+## 題庫 `questions.csv`
+
+```csv
+theme,type,backup,prompt,options,answer,left,right,scale,points,note
+```
+
+- `theme`：主題名稱，依出現順序編號為主題一、二…
+- `type`：`smart10`（十分機靈）、`guess`（心有靈犀）、`wave`（所見略同）
+- `backup`：填 `1` 代表備用題
+- `options`：選項，用 `|` 分隔（十分機靈最多 10 個，心有靈犀通常 5 個）
+- `answer`：十分機靈的正解字母，例如 `ABCEGIJ`
+- `left` / `right`：所見略同 兩端的說明
+- `scale`：所見略同 1–5 每格的說明，用 `|` 分隔（可空白）
+- `points`：十分機靈為每個選項的分數；心有靈犀為猜中分數；所見略同 為正中分數
+- `note`：主持人提示，只顯示在主持面板
+
+改完 CSV 後執行下列指令重新產生 `questions.js`：
+
+```bash
+./scripts/build-questions.sh
+```
