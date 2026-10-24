@@ -1,8 +1,6 @@
 -- Generation Game：Supabase 資料表、RPC 與 RLS
 -- 可重複執行。請在 Supabase Dashboard > SQL Editor 貼上並執行。
 
-create extension if not exists pgcrypto;
-
 create table if not exists public.rooms (
   code text primary key check (code ~ '^[0-9]{4}$'),
   current_question integer not null default -1,
@@ -15,7 +13,7 @@ create table if not exists public.rooms (
 
 create table if not exists public.room_secrets (
   room_code text primary key references public.rooms(code) on delete cascade,
-  token_hash bytea not null
+  host_token uuid not null
 );
 
 create table if not exists public.participants (
@@ -71,8 +69,8 @@ begin
     v_code := lpad((floor(random() * 9000) + 1000)::integer::text, 4, '0');
     begin
       insert into public.rooms(code, question_count) values (v_code, p_question_count);
-      insert into public.room_secrets(room_code, token_hash)
-        values (v_code, digest(p_host_token::text, 'sha256'));
+      insert into public.room_secrets(room_code, host_token)
+      values (v_code, p_host_token);
       return v_code;
     exception when unique_violation then
       v_attempt := v_attempt + 1;
@@ -138,6 +136,9 @@ begin
   if jsonb_typeof(p_answer) not in ('number', 'array') then
     raise exception 'invalid answer';
   end if;
+  if pg_column_size(p_answer) > 512 then
+    raise exception 'answer is too large';
+  end if;
 
   insert into public.responses(room_code, question_index, device_id, answer)
     values (p_room_code, p_question_index, p_device_id, p_answer)
@@ -162,7 +163,7 @@ begin
   if not exists (
     select 1 from public.room_secrets
     where room_code = p_room_code
-      and token_hash = digest(p_host_token::text, 'sha256')
+      and host_token = p_host_token
   ) then
     raise exception 'invalid host token';
   end if;
@@ -197,7 +198,7 @@ begin
   if not exists (
     select 1 from public.room_secrets
     where room_code = p_room_code
-      and token_hash = digest(p_host_token::text, 'sha256')
+      and host_token = p_host_token
   ) then
     raise exception 'invalid host token';
   end if;

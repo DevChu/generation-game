@@ -202,7 +202,10 @@
     setState(room.current_question, "revealed", answer);
   });
   $("#endRoom").addEventListener("click", () => {
-    if (confirm("確定要結束活動嗎？結束後參加者不能再作答。")) setState(room.current_question, "ended");
+    if (confirm("確定要結束活動嗎？結束後參加者不能再作答。")) {
+      localStorage.removeItem("generation-live-host");
+      setState(room.current_question, "ended");
+    }
   });
   $("#fullscreen").addEventListener("click", () => document.documentElement.requestFullscreen?.());
   window.addEventListener("beforeunload", () => { if (pollTimer) clearInterval(pollTimer); });
