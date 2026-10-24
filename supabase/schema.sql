@@ -133,7 +133,7 @@ begin
   ) then
     raise exception 'participant has not joined';
   end if;
-  if jsonb_typeof(p_answer) not in ('number', 'array') then
+  if jsonb_typeof(p_answer) not in ('number', 'array', 'object') then
     raise exception 'invalid answer';
   end if;
   if pg_column_size(p_answer) > 512 then

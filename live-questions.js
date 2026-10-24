@@ -1,38 +1,39 @@
 window.LIVE_QUESTIONS = [
   {
-    type: "wave",
+    type: "predict_average",
     theme: "科技生活",
-    prompt: "出門在外發現手機只剩 5% 電量，你有多焦慮？",
-    options: ["完全沒差", "有點在意", "開始注意用量", "很焦慮", "世界末日"]
+    prompt: "手機剩 5% 電量，你有多焦慮？",
+    options: ["1 完全沒差", "2 有點在意", "3 開始注意用量", "4 很焦慮", "5 世界末日"],
+    selfPrompt: "你的答案",
+    predictionPrompt: "你猜全場平均大約是多少？"
   },
   {
-    type: "poll",
+    type: "smart10",
     theme: "科技生活",
-    prompt: "如果手機只能保留一項功能，你會留哪一個？",
-    options: ["通訊聊天", "拍照", "看影片／娛樂", "地圖導航", "查資料／AI"]
+    prompt: "以下哪些產品／服務在第一代 iPhone（2007）以前就已經存在？（可複選）",
+    options: ["YouTube", "Facebook", "MSN Messenger", "LINE", "Wikipedia", "Instagram", "Google Maps", "TikTok", "Skype", "Gmail"],
+    answer: [0, 1, 2, 4, 6, 8, 9]
   },
   {
     type: "guess",
     theme: "成長、世代與價值觀",
-    prompt: "今天突然多出三小時完全自由的時間，台上代表最想做什麼？",
-    options: ["睡覺／休息", "找朋友", "玩遊戲／追劇", "做自己的興趣", "把事情處理完"]
+    prompt: "邀請一位年輕人上台：突然多出三小時自由時間，最想做什麼？",
+    options: ["睡覺／休息", "找朋友", "玩遊戲／追劇", "做自己的興趣", "把事情處理完"],
+    representative: "年輕代表"
   },
   {
-    type: "smart10",
-    theme: "朋友與相處",
-    prompt: "哪些做法有助於避免溝通誤會？（可複選）",
-    options: [
-      "確認自己是否聽懂", "不確定時直接詢問", "覺得對方應該懂就不用說",
-      "把重要資訊講清楚", "生氣時馬上用訊息回覆", "重述對方意思確認",
-      "只用貼圖表達重要事情", "說明自己的需求", "根據對方年齡猜他的想法",
-      "留意語氣與場合"
-    ],
-    answer: [0, 1, 3, 5, 7, 9]
+    type: "guess",
+    theme: "旅行與生活",
+    prompt: "邀請一位年長者上台：旅行要安排多詳細？",
+    options: ["1 完全不排", "2 只有大方向", "3 排主要景點", "4 大部分安排好", "5 每個時段都規劃"],
+    representative: "年長代表"
   },
   {
-    type: "wave",
+    type: "predict_majority",
     theme: "成長、世代與價值觀",
-    prompt: "你覺得人生最好安排到什麼程度？",
-    options: ["順其自然", "保留很多彈性", "有方向就好", "大多安排好", "詳細規劃"]
+    prompt: "如果可以把現在的一項能力送給 15 歲的自己，你最想送哪一個？",
+    options: ["勇氣", "耐心", "溝通能力", "判斷力", "自信"],
+    selfPrompt: "你的答案",
+    predictionPrompt: "你猜全場最多人會選哪一個？"
   }
 ];

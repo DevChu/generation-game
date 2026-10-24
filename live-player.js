@@ -5,7 +5,7 @@
   const deviceId = Live.deviceId();
   let room = null;
   let nickname = "";
-  let selected = [];
+  let selected = { self: null, prediction: null, multi: [] };
   let submittedQuestion = -1;
 
   const roomFromUrl = new URLSearchParams(location.search).get("room") || "";
@@ -63,7 +63,10 @@
       }, payload => {
         const changedQuestion = room.current_question !== payload.new.current_question;
         room = payload.new;
-        if (changedQuestion) { selected = []; submittedQuestion = -1; }
+        if (changedQuestion) {
+          selected = { self: null, prediction: null, multi: [] };
+          submittedQuestion = -1;
+        }
         render();
       })
       .subscribe(status => setConnection(status === "SUBSCRIBED", status === "SUBSCRIBED" ? "連線正常" : "正在連線"));
@@ -80,14 +83,32 @@
 
     showOnly("answerState");
     const q = questions[room.current_question];
+    const dual = q.type === "predict_average" || q.type === "predict_majority";
     $("#playerMeta").textContent = `第 ${room.current_question + 1} / ${questions.length} 題・${q.theme}`;
     $("#playerQuestion").textContent = q.prompt;
-    $("#answerHint").textContent = q.type === "smart10" ? "可選擇多個答案，再按送出。" : "點選一個答案後會立即送出，鎖定前可以修改。";
-    $("#submitMulti").classList.toggle("hidden", q.type !== "smart10");
-    $("#answerGrid").innerHTML = q.options.map((option, index) => `
-      <button class="answer-btn ${selected.includes(index) ? "selected" : ""}" data-index="${index}">
+    const optionButtons = (field, active) => q.options.map((option, index) => `
+      <button class="answer-btn ${active(index) ? "selected" : ""}" data-field="${field}" data-index="${index}">
         ${Live.optionLabel(index, option)}
       </button>`).join("");
+    if (dual) {
+      $("#answerGrid").innerHTML = `
+        <h3>${Live.escapeHtml(q.selfPrompt)}</h3>
+        ${optionButtons("self", index => selected.self === index)}
+        <h3 style="margin-top:18px">${Live.escapeHtml(q.predictionPrompt)}</h3>
+        ${optionButtons("prediction", index => selected.prediction === index)}`;
+    } else {
+      $("#answerGrid").innerHTML = optionButtons(q.type === "smart10" ? "multi" : "self", index =>
+        q.type === "smart10" ? selected.multi.includes(index) : selected.self === index
+      );
+    }
+    $("#submitAnswer").classList.toggle("hidden", q.type !== "smart10" && !dual);
+    $("#answerHint").textContent = submittedQuestion === room.current_question
+      ? "✓ 已收到答案；主持人鎖定前仍可修改。"
+      : q.type === "smart10"
+        ? "可選擇多個答案，再按送出。"
+        : dual
+          ? "完成兩個選擇後，再按送出。"
+          : "點選一個答案後會立即送出，鎖定前可以修改。";
   }
 
   async function submit(answer) {
@@ -113,23 +134,37 @@
     if (!button || !room || room.phase !== "open") return;
     const index = Number(button.dataset.index);
     const q = questions[room.current_question];
-    if (q.type === "smart10") {
-      selected = selected.includes(index) ? selected.filter(value => value !== index) : [...selected, index].sort((a, b) => a - b);
+    const field = button.dataset.field;
+    if (field === "multi") {
+      selected.multi = selected.multi.includes(index)
+        ? selected.multi.filter(value => value !== index)
+        : [...selected.multi, index].sort((a, b) => a - b);
+      render();
+    } else if (q.type === "predict_average" || q.type === "predict_majority") {
+      selected[field] = index;
       render();
     } else {
-      selected = [index];
+      selected.self = index;
       render();
       await submit(index);
     }
   });
 
-  $("#submitMulti").addEventListener("click", async () => {
-    if (!selected.length) return $("#answerError").textContent = "請至少選擇一個答案。";
-    await submit(selected);
+  $("#submitAnswer").addEventListener("click", async () => {
+    const q = questions[room.current_question];
+    if (q.type === "smart10") {
+      if (!selected.multi.length) return $("#answerError").textContent = "請至少選擇一個答案。";
+      return submit(selected.multi);
+    }
+    if (selected.self === null || selected.prediction === null) {
+      return $("#answerError").textContent = "請完成自己的答案與全場預測。";
+    }
+    await submit({ self: selected.self, prediction: selected.prediction });
   });
 
   function revealIndexes() {
     const value = room.reveal_answer;
+    if (Array.isArray(value?.majority)) return value.majority;
     if (Array.isArray(value)) return value;
     return Number.isInteger(value) ? [value] : [];
   }
@@ -140,6 +175,12 @@
     let text = "請看大螢幕上的全場分布。";
     if (q.type === "guess" && reveal.length) text = `台上代表選擇：${Live.letters[reveal[0]]} ${q.options[reveal[0]]}`;
     if (q.type === "smart10") text = "綠色項目是本題正確答案。";
+    if (q.type === "predict_average" && Number.isFinite(room.reveal_answer?.average)) {
+      text = `全場實際平均：${room.reveal_answer.average.toFixed(2)}`;
+    }
+    if (q.type === "predict_majority" && Array.isArray(room.reveal_answer?.majority)) {
+      text = `全場最多人選：${room.reveal_answer.majority.map(index => q.options[index]).join("、")}`;
+    }
     $("#revealText").textContent = text;
     $("#revealOptions").innerHTML = q.options.map((option, index) =>
       `<div class="option ${reveal.includes(index) ? "correct" : ""}">${Live.optionLabel(index, option)}</div>`

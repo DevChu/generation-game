@@ -107,6 +107,7 @@
 
   function revealIndexes() {
     const value = room.reveal_answer;
+    if (Array.isArray(value?.majority)) return value.majority;
     if (Array.isArray(value)) return value;
     return Number.isInteger(value) ? [value] : [];
   }
@@ -133,8 +134,9 @@
     $("#resultBars").classList.toggle("hidden", !revealed);
     if (revealed) renderBars();
 
+    const dual = q.type === "predict_average" || q.type === "predict_majority";
     const hints = {
-      open: "作答開放中；分布會在公布前保持隱藏。",
+      open: dual ? "作答開放中：每人要回答自己，也要預測全場。" : "作答開放中；分布會在公布前保持隱藏。",
       locked: q.type === "guess" ? "作答已鎖定。按公布後，請選擇台上代表的答案。" : "作答已鎖定，可以公布結果。",
       revealed: room.current_question === questions.length - 1 ? "5 題完成！可以結束活動。" : "結果已公布，可以進入下一題。",
       ended: "活動已結束。"
@@ -143,26 +145,67 @@
     renderCounts();
   }
 
-  function answerIndexes(answer) {
-    return Array.isArray(answer) ? answer : [answer];
+  function responseValue(answer, field = "self") {
+    if (answer && typeof answer === "object" && !Array.isArray(answer)) return answer[field];
+    return answer;
+  }
+
+  function optionCounts(q, field = "self") {
+    const counts = q.options.map(() => 0);
+    currentResponses().forEach(row => {
+      const value = responseValue(row.answer, field);
+      const indexes = Array.isArray(value) ? value : [value];
+      indexes.forEach(index => {
+        if (Number.isInteger(index) && counts[index] !== undefined) counts[index] += 1;
+      });
+    });
+    return counts;
+  }
+
+  function barsHtml(q, counts, title) {
+    const max = Math.max(1, ...counts);
+    return `${title ? `<h3>${Live.escapeHtml(title)}</h3>` : ""}${counts.map((count, index) => `
+      <div class="bar-row">
+        <span>${Live.escapeHtml(q.options[index])}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${count / max * 100}%"></div></div>
+        <strong>${count}</strong>
+      </div>`).join("")}`;
   }
 
   function renderBars() {
     if (!room || room.current_question < 0) return;
     const q = questions[room.current_question];
-    const counts = q.options.map(() => 0);
-    currentResponses().forEach(row => {
-      answerIndexes(row.answer).forEach(index => {
-        if (Number.isInteger(index) && counts[index] !== undefined) counts[index] += 1;
-      });
-    });
-    const max = Math.max(1, ...counts);
-    $("#resultBars").innerHTML = counts.map((count, index) => `
-      <div class="bar-row">
-        <span>${Live.escapeHtml(q.options[index])}</span>
-        <div class="bar-track"><div class="bar-fill" style="width:${count / max * 100}%"></div></div>
-        <strong>${count}</strong>
-      </div>`).join("");
+    const ownCounts = optionCounts(q);
+    let summary = "";
+    let prediction = "";
+    if (q.type === "predict_average" && Number.isFinite(room.reveal_answer?.average)) {
+      summary = `<div class="status-card"><strong>全場實際平均 ${room.reveal_answer.average.toFixed(2)}</strong><span class="muted">猜測差距在 0.5 以內：${room.reveal_answer.closeCount} 人</span></div>`;
+      prediction = barsHtml(q, optionCounts(q, "prediction"), "大家預測的全場平均");
+    }
+    if (q.type === "predict_majority" && Array.isArray(room.reveal_answer?.majority)) {
+      const winners = room.reveal_answer.majority.map(index => q.options[index]).join("、") || "無";
+      summary = `<div class="status-card"><strong>全場最多人選：${Live.escapeHtml(winners)}</strong><span class="muted">猜中最多選項：${room.reveal_answer.correctCount} 人</span></div>`;
+      prediction = barsHtml(q, optionCounts(q, "prediction"), "大家預測的熱門答案");
+    }
+    $("#resultBars").innerHTML = `${summary}${barsHtml(q, ownCounts, q.type.startsWith("predict_") ? "全場自己的答案" : "")}${prediction}`;
+  }
+
+  function audienceReveal(q) {
+    const answers = currentResponses().map(row => row.answer).filter(value => value && typeof value === "object" && !Array.isArray(value));
+    if (q.type === "predict_average") {
+      const own = answers.map(value => value.self).filter(Number.isInteger);
+      const average = own.length ? own.reduce((sum, index) => sum + index + 1, 0) / own.length : null;
+      const closeCount = average === null ? 0 : answers.filter(value => Number.isInteger(value.prediction) && Math.abs(value.prediction + 1 - average) <= .5).length;
+      return { average, closeCount };
+    }
+    if (q.type === "predict_majority") {
+      const counts = optionCounts(q);
+      const max = Math.max(0, ...counts);
+      const majority = max ? counts.flatMap((count, index) => count === max ? [index] : []) : [];
+      const correctCount = answers.filter(value => majority.includes(value.prediction)).length;
+      return { majority, correctCount };
+    }
+    return null;
   }
 
   async function setState(index, phase, revealAnswer = null) {
@@ -181,7 +224,7 @@
   }
 
   function askRepresentative(q) {
-    const raw = window.prompt(`台上代表選了哪一項？\n${q.options.map((v, i) => `${Live.letters[i]}：${v}`).join("\n")}\n\n請輸入 A～${Live.letters[q.options.length - 1]}`);
+    const raw = window.prompt(`${q.representative || "台上代表"}選了哪一項？\n${q.options.map((v, i) => `${Live.letters[i]}：${v}`).join("\n")}\n\n請輸入 A～${Live.letters[q.options.length - 1]}`);
     if (!raw) return null;
     const index = Live.letters.indexOf(raw.trim().toUpperCase());
     return index >= 0 && index < q.options.length ? index : null;
@@ -191,7 +234,8 @@
   $("#startQuestion").addEventListener("click", () => setState(0, "open"));
   $("#lockQuestion").addEventListener("click", () => setState(room.current_question, "locked"));
   $("#nextQuestion").addEventListener("click", () => setState(room.current_question + 1, "open"));
-  $("#revealQuestion").addEventListener("click", () => {
+  $("#revealQuestion").addEventListener("click", async () => {
+    await refreshResults();
     const q = questions[room.current_question];
     let answer = null;
     if (q.type === "smart10") answer = q.answer;
@@ -199,6 +243,7 @@
       answer = askRepresentative(q);
       if (answer === null) return setError("請輸入有效的代表答案（A～E）。");
     }
+    if (q.type === "predict_average" || q.type === "predict_majority") answer = audienceReveal(q);
     setState(room.current_question, "revealed", answer);
   });
   $("#endRoom").addEventListener("click", () => {
