@@ -49,6 +49,13 @@ button:disabled { cursor: not-allowed; opacity: .42; }
 .stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 18px 0; }
 .stat { padding: 14px 16px; border: 1px solid var(--line); border-radius: 15px; }
 .stat strong { display: block; color: var(--gold); font-size: 1.9rem; }
+.participant-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.participant-head h2 { margin: 0; }
+.compact-stats { width: min(380px, 55%); margin: 0; }
+.compact-stats .stat { padding: 8px 12px; }
+.compact-stats .stat strong { display: inline; margin-left: 8px; font-size: 1.25rem; }
+.participant-names { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 16px; max-height: 148px; overflow: auto; }
+.participant-name { padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.05); }
 .question-meta { color: var(--gold); font-weight: 800; }
 .question { margin: 10px 0 22px; font-size: clamp(1.7rem, 4vw, 3.5rem); line-height: 1.2; }
 .options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -70,6 +77,15 @@ input { width: 100%; padding: 14px 15px; border: 1px solid var(--line); border-r
 .answer-btn .letter { margin-right: 10px; }
 .status-card { padding: 20px; text-align: center; border: 1px solid var(--line); border-radius: 16px; }
 .status-card strong { display: block; margin-bottom: 6px; font-size: 1.35rem; }
+.leaderboard { margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--line); }
+.leaderboard h2 { margin: 0 0 16px; text-align: center; }
+.podium { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.podium-card { padding: 18px; text-align: center; border: 1px solid var(--line); border-radius: 18px; background: rgba(255,255,255,.05); }
+.podium-card:first-child { border-color: var(--gold); background: rgba(255,209,102,.12); }
+.podium-rank { display: block; color: var(--gold); font-size: 1.5rem; font-weight: 900; }
+.podium-name { display: block; margin: 5px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 1.25rem; font-weight: 800; }
+.podium-score { color: var(--green); font-size: 1.15rem; font-weight: 800; }
+.score-rule { margin-bottom: 0; text-align: center; }
 @media (max-width: 700px) {
   .shell { width: min(100% - 22px, 1180px); padding-top: 12px; }
   .lobby { grid-template-columns: 1fr; }
@@ -77,4 +93,7 @@ input { width: 100%; padding: 14px 15px; border: 1px solid var(--line); border-r
   .options { grid-template-columns: 1fr; }
   .bar-row { grid-template-columns: 100px 1fr 38px; font-size: .88rem; }
   .topbar { align-items: flex-start; }
+  .participant-head { align-items: flex-start; flex-direction: column; }
+  .compact-stats { width: 100%; }
+  .podium { grid-template-columns: 1fr; }
 }

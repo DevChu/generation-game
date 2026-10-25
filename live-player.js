@@ -51,7 +51,11 @@
       subscribe();
       render();
     } catch (error) {
-      $("#joinError").textContent = error.message.includes("room not found") ? "找不到房間，請確認房號。" : error.message;
+      $("#joinError").textContent = error.message.includes("room not found")
+        ? "找不到房間，請確認房號。"
+        : error.message.includes("already started")
+          ? "活動已經開始，現在不能再加入。"
+          : error.message;
       button.disabled = false;
     }
   }

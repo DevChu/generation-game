@@ -89,11 +89,18 @@
     if (error) return setError(error);
     hostRows = data || [];
     renderCounts();
-    if (room.phase === "revealed") renderBars();
+    if (room.phase === "revealed") {
+      renderBars();
+      renderLeaderboard();
+    }
   }
 
   function participants() {
-    return new Set(hostRows.map(row => row.device_id));
+    const unique = new Map();
+    hostRows.forEach(row => {
+      if (!unique.has(row.device_id)) unique.set(row.device_id, { deviceId: row.device_id, nickname: row.nickname });
+    });
+    return [...unique.values()];
   }
 
   function currentResponses() {
@@ -101,8 +108,12 @@
   }
 
   function renderCounts() {
-    $("#joinedCount").textContent = participants().size;
+    const joined = participants();
+    $("#joinedCount").textContent = joined.length;
     $("#answeredCount").textContent = room.current_question >= 0 ? currentResponses().length : 0;
+    $("#participantNames").innerHTML = joined.length
+      ? joined.map(person => `<span class="participant-name">${Live.escapeHtml(person.nickname)}</span>`).join("")
+      : `<span class="muted">等待參加者加入…</span>`;
   }
 
   function revealIndexes() {
@@ -115,12 +126,14 @@
   function render() {
     if (!room) return;
     const hasQuestion = room.current_question >= 0 && room.current_question < questions.length;
+    $("#joinLobby").classList.toggle("hidden", hasQuestion || room.phase === "ended");
     $("#waitingMessage").classList.toggle("hidden", hasQuestion);
     $("#questionContent").classList.toggle("hidden", !hasQuestion);
     $("#startQuestion").classList.toggle("hidden", hasQuestion || room.phase === "ended");
     $("#lockQuestion").disabled = room.phase !== "open";
     $("#revealQuestion").disabled = room.phase !== "locked";
     $("#nextQuestion").disabled = room.phase !== "revealed" || room.current_question >= questions.length - 1;
+    $("#leaderboard").classList.toggle("hidden", room.phase !== "revealed");
 
     if (!hasQuestion) return renderCounts();
     const q = questions[room.current_question];
@@ -133,6 +146,7 @@
     ).join("");
     $("#resultBars").classList.toggle("hidden", !revealed);
     if (revealed) renderBars();
+    if (revealed) renderLeaderboard();
 
     const dual = q.type === "predict_average" || q.type === "predict_majority";
     const hints = {
@@ -208,6 +222,73 @@
     return null;
   }
 
+  function accuracyFactor(q, revealAnswer, answer) {
+    if (q.type === "predict_average") {
+      if (!Number.isFinite(revealAnswer?.average) || !Number.isInteger(answer?.prediction)) return 0;
+      return Math.max(0, 1 - Math.abs(answer.prediction + 1 - revealAnswer.average) / 2);
+    }
+    if (q.type === "predict_majority") {
+      return Array.isArray(revealAnswer?.majority) && revealAnswer.majority.includes(answer?.prediction) ? 1 : 0;
+    }
+    if (q.type === "guess") return answer === revealAnswer ? 1 : 0;
+    if (q.type === "smart10") {
+      const picked = new Set(Array.isArray(answer) ? answer : []);
+      const correct = new Set(q.answer);
+      const decisions = q.options.reduce((sum, _, index) => sum + (picked.has(index) === correct.has(index) ? 1 : 0), 0);
+      return decisions / q.options.length;
+    }
+    return 0;
+  }
+
+  function calculateScores(q, revealAnswer) {
+    return currentResponses().map(row => {
+      const accuracy = accuracyFactor(q, revealAnswer, row.answer);
+      const speed = Math.max(0, 1 - Math.max(0, Number(row.response_ms) || 0) / 60000);
+      return {
+        device_id: row.device_id,
+        points: Math.round(accuracy * (1000 + 500 * speed))
+      };
+    });
+  }
+
+  async function saveScores(scores) {
+    const { error } = await db.rpc("save_live_scores", {
+      p_room_code: room.code,
+      p_host_token: hostToken,
+      p_question_index: room.current_question,
+      p_scores: scores
+    });
+    if (error) throw error;
+    const byDevice = new Map(scores.map(item => [item.device_id, item.points]));
+    hostRows.forEach(row => {
+      if (row.question_index === room.current_question && byDevice.has(row.device_id)) row.points = byDevice.get(row.device_id);
+    });
+  }
+
+  function renderLeaderboard() {
+    const totals = new Map(participants().map(person => [person.deviceId, {
+      nickname: person.nickname,
+      points: 0,
+      responseMs: 0
+    }]));
+    hostRows.forEach(row => {
+      const total = totals.get(row.device_id);
+      if (!total || row.question_index === null) return;
+      total.points += Number(row.points) || 0;
+      total.responseMs += Number(row.response_ms) || 0;
+    });
+    const top = [...totals.values()]
+      .sort((a, b) => b.points - a.points || a.responseMs - b.responseMs || a.nickname.localeCompare(b.nickname, "zh-Hant"))
+      .slice(0, 3);
+    $("#podium").innerHTML = top.length
+      ? top.map((person, index) => `<div class="podium-card">
+          <span class="podium-rank">第 ${index + 1} 名</span>
+          <span class="podium-name">${Live.escapeHtml(person.nickname)}</span>
+          <span class="podium-score">${person.points.toLocaleString()} 分</span>
+        </div>`).join("")
+      : `<p class="muted">本題尚無作答資料。</p>`;
+  }
+
   async function setState(index, phase, revealAnswer = null) {
     setError("");
     const { error } = await db.rpc("set_live_room_state", {
@@ -244,7 +325,12 @@
       if (answer === null) return setError("請輸入有效的代表答案（A～E）。");
     }
     if (q.type === "predict_average" || q.type === "predict_majority") answer = audienceReveal(q);
-    setState(room.current_question, "revealed", answer);
+    try {
+      await saveScores(calculateScores(q, answer));
+      await setState(room.current_question, "revealed", answer);
+    } catch (error) {
+      setError(error);
+    }
   });
   $("#endRoom").addEventListener("click", () => {
     if (confirm("確定要結束活動嗎？結束後參加者不能再作答。")) {

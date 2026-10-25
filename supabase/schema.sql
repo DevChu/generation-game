@@ -7,6 +7,7 @@ create table if not exists public.rooms (
   phase text not null default 'waiting' check (phase in ('waiting', 'open', 'locked', 'revealed', 'ended')),
   question_count integer not null check (question_count between 1 and 20),
   reveal_answer jsonb,
+  question_started_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -29,11 +30,17 @@ create table if not exists public.responses (
   question_index integer not null check (question_index between 0 and 19),
   device_id uuid not null,
   answer jsonb not null,
+  response_ms integer,
+  points integer not null default 0,
   updated_at timestamptz not null default now(),
   primary key (room_code, question_index, device_id),
   foreign key (room_code, device_id)
     references public.participants(room_code, device_id) on delete cascade
 );
+
+alter table public.rooms add column if not exists question_started_at timestamptz;
+alter table public.responses add column if not exists response_ms integer;
+alter table public.responses add column if not exists points integer not null default 0;
 
 alter table public.rooms enable row level security;
 alter table public.room_secrets enable row level security;
@@ -92,14 +99,20 @@ set search_path = ''
 as $$
 declare
   v_name text := trim(p_nickname);
+  v_phase text;
 begin
-  if not exists (
-    select 1 from public.rooms where code = p_room_code and phase <> 'ended'
-  ) then
+  select phase into v_phase from public.rooms where code = p_room_code;
+  if not found or v_phase = 'ended' then
     raise exception 'room not found or already ended';
   end if;
   if char_length(v_name) < 1 or char_length(v_name) > 24 then
     raise exception 'nickname must be 1 to 24 characters';
+  end if;
+  if v_phase <> 'waiting' and not exists (
+    select 1 from public.participants
+    where room_code = p_room_code and device_id = p_device_id
+  ) then
+    raise exception 'room has already started';
   end if;
 
   insert into public.participants(room_code, device_id, nickname)
@@ -140,10 +153,19 @@ begin
     raise exception 'answer is too large';
   end if;
 
-  insert into public.responses(room_code, question_index, device_id, answer)
-    values (p_room_code, p_question_index, p_device_id, p_answer)
+  insert into public.responses(room_code, question_index, device_id, answer, response_ms)
+    values (
+      p_room_code,
+      p_question_index,
+      p_device_id,
+      p_answer,
+      greatest(0, floor(extract(epoch from (now() - v_room.question_started_at)) * 1000)::integer)
+    )
   on conflict (room_code, question_index, device_id)
-    do update set answer = excluded.answer, updated_at = now();
+    do update set
+      answer = excluded.answer,
+      response_ms = excluded.response_ms,
+      updated_at = now();
 end;
 $$;
 
@@ -180,16 +202,25 @@ begin
   set current_question = p_question_index,
       phase = p_phase,
       reveal_answer = case when p_phase = 'revealed' then p_reveal_answer else null end,
+      question_started_at = case when p_phase = 'open' then now() else question_started_at end,
       updated_at = now()
   where code = p_room_code;
 end;
 $$;
 
-create or replace function public.get_live_host_results(
+drop function if exists public.get_live_host_results(text, uuid);
+create function public.get_live_host_results(
   p_room_code text,
   p_host_token uuid
 )
-returns table(device_id uuid, nickname text, question_index integer, answer jsonb)
+returns table(
+  device_id uuid,
+  nickname text,
+  question_index integer,
+  answer jsonb,
+  response_ms integer,
+  points integer
+)
 language plpgsql
 security definer
 set search_path = ''
@@ -204,7 +235,7 @@ begin
   end if;
 
   return query
-    select p.device_id, p.nickname, r.question_index, r.answer
+    select p.device_id, p.nickname, r.question_index, r.answer, r.response_ms, r.points
     from public.participants p
     left join public.responses r
       on r.room_code = p.room_code and r.device_id = p.device_id
@@ -213,17 +244,51 @@ begin
 end;
 $$;
 
+create or replace function public.save_live_scores(
+  p_room_code text,
+  p_host_token uuid,
+  p_question_index integer,
+  p_scores jsonb
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if not exists (
+    select 1 from public.room_secrets
+    where room_code = p_room_code
+      and host_token = p_host_token
+  ) then
+    raise exception 'invalid host token';
+  end if;
+  if jsonb_typeof(p_scores) <> 'array' or pg_column_size(p_scores) > 100000 then
+    raise exception 'invalid scores';
+  end if;
+
+  update public.responses r
+  set points = greatest(0, least(1500, coalesce(s.points, 0)))
+  from jsonb_to_recordset(p_scores) as s(device_id uuid, points integer)
+  where r.room_code = p_room_code
+    and r.question_index = p_question_index
+    and r.device_id = s.device_id;
+end;
+$$;
+
 revoke all on function public.create_live_room(uuid, integer) from public;
 revoke all on function public.join_live_room(text, uuid, text) from public;
 revoke all on function public.submit_live_answer(text, uuid, integer, jsonb) from public;
 revoke all on function public.set_live_room_state(text, uuid, integer, text, jsonb) from public;
 revoke all on function public.get_live_host_results(text, uuid) from public;
+revoke all on function public.save_live_scores(text, uuid, integer, jsonb) from public;
 
 grant execute on function public.create_live_room(uuid, integer) to anon, authenticated;
 grant execute on function public.join_live_room(text, uuid, text) to anon, authenticated;
 grant execute on function public.submit_live_answer(text, uuid, integer, jsonb) to anon, authenticated;
 grant execute on function public.set_live_room_state(text, uuid, integer, text, jsonb) to anon, authenticated;
 grant execute on function public.get_live_host_results(text, uuid) to anon, authenticated;
+grant execute on function public.save_live_scores(text, uuid, integer, jsonb) to anon, authenticated;
 
 do $$
 begin

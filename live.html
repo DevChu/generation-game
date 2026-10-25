@@ -21,18 +21,25 @@
     </section>
 
     <section id="roomPanel" class="hidden">
-      <div class="panel lobby">
+      <div id="joinLobby" class="panel lobby">
         <div>
           <div class="muted">請掃描 QR Code，或輸入房號</div>
           <div id="roomCode" class="room-code">----</div>
           <div id="joinUrl" class="join-url muted"></div>
-          <div class="stats">
+        </div>
+        <div id="qrCode" class="qr-wrap"></div>
+      </div>
+
+      <section id="participantPanel" class="panel participant-panel" style="margin-top:18px">
+        <div class="participant-head">
+          <h2>已加入名單</h2>
+          <div class="stats compact-stats">
             <div class="stat"><span class="muted">已加入</span><strong id="joinedCount">0</strong></div>
             <div class="stat"><span class="muted">本題已作答</span><strong id="answeredCount">0</strong></div>
           </div>
         </div>
-        <div id="qrCode" class="qr-wrap"></div>
-      </div>
+        <div id="participantNames" class="participant-names"><span class="muted">等待參加者加入…</span></div>
+      </section>
 
       <section id="questionPanel" class="panel" style="margin-top:18px">
         <div id="waitingMessage">
@@ -42,6 +49,11 @@
         <div id="questionContent" class="hidden">
           <div id="questionMeta" class="question-meta"></div>
           <h2 id="questionText" class="question"></h2>
+          <section id="leaderboard" class="leaderboard hidden">
+            <h2>累積分數前三名</h2>
+            <div id="podium" class="podium"></div>
+            <p class="muted score-rule">每題最高 1,500 分：正確度最高 1,000 分，60 秒內依速度最高加 500 分。</p>
+          </section>
           <div id="questionOptions" class="options"></div>
           <div id="resultBars" class="bars hidden"></div>
         </div>
