@@ -152,7 +152,7 @@
     const hints = {
       open: dual ? "作答開放中：每人要回答自己，也要預測全場。" : "作答開放中；分布會在公布前保持隱藏。",
       locked: q.type === "guess" ? "作答已鎖定。按公布後，請選擇台上代表的答案。" : "作答已鎖定，可以公布結果。",
-      revealed: room.current_question === questions.length - 1 ? "5 題完成！可以結束活動。" : "結果已公布，可以進入下一題。",
+      revealed: room.current_question === questions.length - 1 ? `${questions.length} 題完成！可以結束活動。` : "結果已公布，可以進入下一題。",
       ended: "活動已結束。"
     };
     $("#hostHint").textContent = hints[room.phase] || "等待開始。";

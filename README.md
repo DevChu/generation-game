@@ -2,13 +2,13 @@
 
 投影用的單頁 HTML 團康遊戲（仿 hitster_group 架構）：5 個主題 × 每主題 5 題（4 題正式＋1 題備用），三種遊戲輪流進行，預設 8 組，約 60 分鐘。
 
-另有適合約 100 人、不分組的「全場連線模式」：參加者掃描 QR Code，以手機同步回答 5 題，主持端即時顯示加入／作答人數，鎖定後公布答案分布。
+另有適合約 100 人、不分組的「全場連線模式」：參加者掃描 QR Code，以手機同步回答 4 題，主持端即時顯示加入／作答人數，鎖定後公布答案分布。
 
 ## 全場連線模式
 
 - `live.html`：主持人投影與控場頁
 - `play.html`：參加者手機作答頁
-- `live-questions.js`：全場模式使用的 5 題
+- `live-questions.js`：全場模式使用的 4 題
 - `supabase/schema.sql`：Supabase 資料表、RPC 與安全規則
 - `supabase-config.js`：瀏覽器可公開的 Supabase Project URL 與 Publishable key
 
