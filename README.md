@@ -24,6 +24,8 @@
 
 主持人按「結束活動」後會進入全螢幕頒獎畫面，以金、銀、銅牌和彩帶動畫公布最終前三名；可以重播動畫或關閉後再次顯示。
 
+每題公布後，參加者手機會列出自己的選項、正確答案、本題得分與答對／答錯；主持畫面則列出本題答對者，超過 20 人時可按「顯示更多」。代表題的答案由主持人在投影頁直接點選選項，再按「送出並公布」。
+
 請勿把 Supabase `service_role` key、Secret key、資料庫密碼或 connection string 放進此 repository。Publishable key 是設計給瀏覽器使用的；資料存取由 `schema.sql` 的 RLS 與 RPC 驗證限制。
 
 ### GitHub Pages

@@ -86,6 +86,25 @@ input { width: 100%; padding: 14px 15px; border: 1px solid var(--line); border-r
 .podium-name { display: block; margin: 5px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 1.25rem; font-weight: 800; }
 .podium-score { color: var(--green); font-size: 1.15rem; font-weight: 800; }
 .score-rule { margin-bottom: 0; text-align: center; }
+.representative-picker { margin: 0 0 22px; padding: 20px; border: 2px solid var(--gold); border-radius: 18px; background: rgba(255,209,102,.08); }
+.representative-picker h2 { margin-top: 0; }
+.representative-picker .answer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.representative-picker .primary { width: 100%; margin-top: 14px; }
+.reveal-columns { display: grid; grid-template-columns: 1.25fr .75fr; gap: 16px; margin: 0 0 22px; }
+.reveal-columns .leaderboard { margin: 0; padding: 20px; border: 1px solid var(--line); border-radius: 18px; }
+.correct-panel { padding: 20px; border: 1px solid var(--line); border-radius: 18px; background: rgba(85,214,158,.06); }
+.correct-panel h2 { margin: 0 0 14px; }
+.correct-names { display: flex; flex-wrap: wrap; gap: 8px; }
+.correct-name { padding: 6px 10px; border-radius: 999px; color: #07140f; background: var(--green); font-weight: 800; }
+.correct-panel .ghost { margin-top: 14px; }
+.personal-result { padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255,255,255,.04); }
+.personal-result.correct { border-color: var(--green); background: rgba(85,214,158,.11); }
+.personal-result.incorrect { border-color: var(--red); background: rgba(255,107,122,.09); }
+.result-verdict { margin-bottom: 12px; font-size: 1.5rem; font-weight: 900; }
+.personal-result.correct .result-verdict { color: var(--green); }
+.personal-result.incorrect .result-verdict { color: var(--red); }
+.result-lines { display: grid; gap: 8px; }
+.result-lines b { color: var(--gold); }
 .finale-overlay {
   position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; overflow: hidden;
   padding: 28px; background: radial-gradient(circle at 50% 35%, #283457 0, #111625 42%, #070910 78%);
@@ -136,6 +155,8 @@ input { width: 100%; padding: 14px 15px; border: 1px solid var(--line); border-r
   .participant-head { align-items: flex-start; flex-direction: column; }
   .compact-stats { width: 100%; }
   .podium { grid-template-columns: 1fr; }
+  .reveal-columns { grid-template-columns: 1fr; }
+  .representative-picker .answer-grid { grid-template-columns: 1fr; }
   .finale-overlay { padding: 16px; }
   .final-podium { gap: 8px; }
   .award-card, .award-card.rank-1, .award-card.rank-2, .award-card.rank-3 { min-height: 0; padding: 15px 8px; }

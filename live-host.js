@@ -7,6 +7,9 @@
   let hostRows = [];
   let pollTimer = null;
   let finalWinners = [];
+  let choosingRepresentative = false;
+  let selectedRepresentative = null;
+  let showAllCorrect = false;
 
   function setConnection(ok, text) {
     $("#connectionDot").classList.toggle("on", ok);
@@ -93,6 +96,7 @@
     if (room.phase === "revealed") {
       renderBars();
       renderLeaderboard();
+      renderCorrectList();
     }
   }
 
@@ -132,13 +136,15 @@
     $("#questionContent").classList.toggle("hidden", !hasQuestion);
     $("#startQuestion").classList.toggle("hidden", hasQuestion || room.phase === "ended");
     $("#lockQuestion").disabled = room.phase !== "open";
-    $("#revealQuestion").disabled = room.phase !== "locked";
+    $("#revealQuestion").disabled = room.phase !== "locked" || choosingRepresentative;
     $("#nextQuestion").disabled = room.phase !== "revealed" || room.current_question >= questions.length - 1;
     $("#endRoom").textContent = room.phase === "ended" ? "再次顯示頒獎" : "結束活動";
-    $("#leaderboard").classList.toggle("hidden", room.phase !== "revealed");
+    $("#revealColumns").classList.toggle("hidden", room.phase !== "revealed");
+    $("#representativeAnswerPanel").classList.toggle("hidden", !choosingRepresentative || room.phase !== "locked");
 
     if (!hasQuestion) return renderCounts();
     const q = questions[room.current_question];
+    $("#questionOptions").classList.toggle("hidden", choosingRepresentative && room.phase === "locked");
     $("#questionMeta").textContent = `第 ${room.current_question + 1} / ${questions.length} 題・${q.theme}`;
     $("#questionText").textContent = q.prompt;
     const revealed = room.phase === "revealed";
@@ -149,6 +155,7 @@
     $("#resultBars").classList.toggle("hidden", !revealed);
     if (revealed) renderBars();
     if (revealed) renderLeaderboard();
+    if (revealed) renderCorrectList();
 
     const dual = q.type === "predict_average" || q.type === "predict_majority";
     const hints = {
@@ -240,6 +247,37 @@
       return decisions / q.options.length;
     }
     return 0;
+  }
+
+  function isCorrectAnswer(q, revealAnswer, answer) {
+    if (q.type === "predict_average") {
+      return Number.isFinite(revealAnswer?.average)
+        && Number.isInteger(answer?.prediction)
+        && Math.abs(answer.prediction + 1 - revealAnswer.average) <= .5;
+    }
+    if (q.type === "predict_majority") {
+      return Array.isArray(revealAnswer?.majority) && revealAnswer.majority.includes(answer?.prediction);
+    }
+    if (q.type === "guess") return answer === revealAnswer;
+    if (q.type === "smart10") {
+      const picked = [...new Set(Array.isArray(answer) ? answer : [])].sort((a, b) => a - b);
+      const correct = [...q.answer].sort((a, b) => a - b);
+      return picked.length === correct.length && picked.every((value, index) => value === correct[index]);
+    }
+    return false;
+  }
+
+  function renderCorrectList() {
+    if (!room || room.phase !== "revealed") return;
+    const q = questions[room.current_question];
+    const correct = currentResponses().filter(row => isCorrectAnswer(q, room.reveal_answer, row.answer));
+    const visible = showAllCorrect ? correct : correct.slice(0, 20);
+    $("#correctCount").textContent = correct.length;
+    $("#correctNames").innerHTML = visible.length
+      ? visible.map(row => `<span class="correct-name">${Live.escapeHtml(row.nickname)}</span>`).join("")
+      : `<span class="muted">本題還沒有人答對</span>`;
+    $("#showMoreCorrect").classList.toggle("hidden", correct.length <= 20);
+    $("#showMoreCorrect").textContent = showAllCorrect ? "收合名單" : `顯示更多…（還有 ${correct.length - 20} 人）`;
   }
 
   function calculateScores(q, revealAnswer) {
@@ -338,16 +376,34 @@
       return false;
     }
     room = { ...room, current_question: index, phase, reveal_answer: phase === "revealed" ? revealAnswer : null };
+    if (phase === "open") {
+      choosingRepresentative = false;
+      selectedRepresentative = null;
+      showAllCorrect = false;
+    }
     render();
     await refreshResults();
     return true;
   }
 
-  function askRepresentative(q) {
-    const raw = window.prompt(`${q.representative || "台上代表"}選了哪一項？\n${q.options.map((v, i) => `${Live.letters[i]}：${v}`).join("\n")}\n\n請輸入 A～${Live.letters[q.options.length - 1]}`);
-    if (!raw) return null;
-    const index = Live.letters.indexOf(raw.trim().toUpperCase());
-    return index >= 0 && index < q.options.length ? index : null;
+  function renderRepresentativePicker(q) {
+    $("#representativePrompt").textContent = `請選擇${q.representative || "台上代表"}的答案`;
+    $("#representativeOptions").innerHTML = q.options.map((option, index) => `
+      <button class="answer-btn ${selectedRepresentative === index ? "selected" : ""}" data-representative="${index}">
+        ${Live.optionLabel(index, option)}
+      </button>`).join("");
+    $("#submitRepresentative").disabled = selectedRepresentative === null;
+    $("#representativeAnswerPanel").classList.remove("hidden");
+  }
+
+  async function publishAnswer(q, answer) {
+    try {
+      await saveScores(calculateScores(q, answer));
+      choosingRepresentative = false;
+      await setState(room.current_question, "revealed", answer);
+    } catch (error) {
+      setError(error);
+    }
   }
 
   $("#createRoom").addEventListener("click", createRoom);
@@ -360,16 +416,29 @@
     let answer = null;
     if (q.type === "smart10") answer = q.answer;
     if (q.type === "guess") {
-      answer = askRepresentative(q);
-      if (answer === null) return setError("請輸入有效的代表答案（A～E）。");
+      choosingRepresentative = true;
+      selectedRepresentative = null;
+      render();
+      renderRepresentativePicker(q);
+      return;
     }
     if (q.type === "predict_average" || q.type === "predict_majority") answer = audienceReveal(q);
-    try {
-      await saveScores(calculateScores(q, answer));
-      await setState(room.current_question, "revealed", answer);
-    } catch (error) {
-      setError(error);
-    }
+    await publishAnswer(q, answer);
+  });
+  $("#representativeOptions").addEventListener("click", event => {
+    const button = event.target.closest("[data-representative]");
+    if (!button) return;
+    selectedRepresentative = Number(button.dataset.representative);
+    renderRepresentativePicker(questions[room.current_question]);
+  });
+  $("#submitRepresentative").addEventListener("click", async () => {
+    if (selectedRepresentative === null) return;
+    await refreshResults();
+    await publishAnswer(questions[room.current_question], selectedRepresentative);
+  });
+  $("#showMoreCorrect").addEventListener("click", () => {
+    showAllCorrect = !showAllCorrect;
+    renderCorrectList();
   });
   $("#endRoom").addEventListener("click", async () => {
     if (room.phase === "ended") return showFinale();

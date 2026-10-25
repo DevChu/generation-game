@@ -276,12 +276,40 @@ begin
 end;
 $$;
 
+create or replace function public.get_live_player_result(
+  p_room_code text,
+  p_device_id uuid,
+  p_question_index integer
+)
+returns table(answer jsonb, response_ms integer, points integer)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if not exists (
+    select 1 from public.participants
+    where room_code = p_room_code and device_id = p_device_id
+  ) then
+    raise exception 'participant has not joined';
+  end if;
+
+  return query
+    select r.answer, r.response_ms, r.points
+    from public.responses r
+    where r.room_code = p_room_code
+      and r.device_id = p_device_id
+      and r.question_index = p_question_index;
+end;
+$$;
+
 revoke all on function public.create_live_room(uuid, integer) from public;
 revoke all on function public.join_live_room(text, uuid, text) from public;
 revoke all on function public.submit_live_answer(text, uuid, integer, jsonb) from public;
 revoke all on function public.set_live_room_state(text, uuid, integer, text, jsonb) from public;
 revoke all on function public.get_live_host_results(text, uuid) from public;
 revoke all on function public.save_live_scores(text, uuid, integer, jsonb) from public;
+revoke all on function public.get_live_player_result(text, uuid, integer) from public;
 
 grant execute on function public.create_live_room(uuid, integer) to anon, authenticated;
 grant execute on function public.join_live_room(text, uuid, text) to anon, authenticated;
@@ -289,6 +317,7 @@ grant execute on function public.submit_live_answer(text, uuid, integer, jsonb) 
 grant execute on function public.set_live_room_state(text, uuid, integer, text, jsonb) to anon, authenticated;
 grant execute on function public.get_live_host_results(text, uuid) to anon, authenticated;
 grant execute on function public.save_live_scores(text, uuid, integer, jsonb) to anon, authenticated;
+grant execute on function public.get_live_player_result(text, uuid, integer) to anon, authenticated;
 
 do $$
 begin

@@ -7,6 +7,8 @@
   let nickname = "";
   let selected = { self: null, prediction: null, multi: [] };
   let submittedQuestion = -1;
+  const playerResults = new Map();
+  const resultRequests = new Set();
 
   const roomFromUrl = new URLSearchParams(location.search).get("room") || "";
   $("#roomInput").value = roomFromUrl.replace(/\D/g, "").slice(0, 4);
@@ -173,6 +175,90 @@
     return Number.isInteger(value) ? [value] : [];
   }
 
+  function formatOption(q, index) {
+    return Number.isInteger(index) && q.options[index]
+      ? `${Live.letters[index]} ${q.options[index]}`
+      : "未選擇";
+  }
+
+  function exactMultiAnswer(answer, correct) {
+    const picked = [...new Set(Array.isArray(answer) ? answer : [])].sort((a, b) => a - b);
+    const truth = [...correct].sort((a, b) => a - b);
+    return picked.length === truth.length && picked.every((value, index) => value === truth[index]);
+  }
+
+  function personalVerdict(q, answer) {
+    if (q.type === "predict_average") {
+      return Number.isFinite(room.reveal_answer?.average)
+        && Number.isInteger(answer?.prediction)
+        && Math.abs(answer.prediction + 1 - room.reveal_answer.average) <= .5;
+    }
+    if (q.type === "predict_majority") {
+      return Array.isArray(room.reveal_answer?.majority) && room.reveal_answer.majority.includes(answer?.prediction);
+    }
+    if (q.type === "smart10") return exactMultiAnswer(answer, q.answer);
+    if (q.type === "guess") return answer === room.reveal_answer;
+    return false;
+  }
+
+  function renderPersonalResult(q, result) {
+    if (!result) {
+      $("#personalResult").className = "personal-result incorrect";
+      $("#personalResult").innerHTML = `<div class="result-verdict">本題未作答</div>`;
+      return;
+    }
+    const answer = result.answer;
+    const correct = personalVerdict(q, answer);
+    let myAnswer = "";
+    let official = "";
+    if (q.type === "predict_average") {
+      myAnswer = `<div><b>你的選擇：</b>${Live.escapeHtml(formatOption(q, answer.self))}</div>
+        <div><b>你的全場預測：</b>${Live.escapeHtml(formatOption(q, answer.prediction))}</div>`;
+      official = `全場實際平均 ${room.reveal_answer.average.toFixed(2)}（差距 ±0.5 內算答對）`;
+    } else if (q.type === "predict_majority") {
+      myAnswer = `<div><b>你的選擇：</b>${Live.escapeHtml(formatOption(q, answer.self))}</div>
+        <div><b>你的熱門預測：</b>${Live.escapeHtml(formatOption(q, answer.prediction))}</div>`;
+      official = room.reveal_answer.majority.map(index => formatOption(q, index)).join("、");
+    } else if (q.type === "smart10") {
+      myAnswer = `<div><b>你的答案：</b>${Live.escapeHtml((answer || []).map(index => formatOption(q, index)).join("、") || "未選擇")}</div>`;
+      official = q.answer.map(index => formatOption(q, index)).join("、");
+    } else {
+      myAnswer = `<div><b>你的答案：</b>${Live.escapeHtml(formatOption(q, answer))}</div>`;
+      official = formatOption(q, room.reveal_answer);
+    }
+    $("#personalResult").className = `personal-result ${correct ? "correct" : "incorrect"}`;
+    $("#personalResult").innerHTML = `
+      <div class="result-verdict">${correct ? "✓ 答對了" : "✕ 答錯了"}</div>
+      <div class="result-lines">
+        ${myAnswer}
+        <div><b>正確答案：</b>${Live.escapeHtml(official)}</div>
+        <div><b>本題得分：</b>${Number(result.points || 0).toLocaleString()} 分</div>
+      </div>`;
+  }
+
+  async function loadPersonalResult(questionIndex) {
+    if (playerResults.has(questionIndex) || resultRequests.has(questionIndex)) {
+      if (playerResults.has(questionIndex)) renderPersonalResult(questions[questionIndex], playerResults.get(questionIndex));
+      return;
+    }
+    resultRequests.add(questionIndex);
+    const { data, error } = await db.rpc("get_live_player_result", {
+      p_room_code: room.code,
+      p_device_id: deviceId,
+      p_question_index: questionIndex
+    });
+    resultRequests.delete(questionIndex);
+    if (error) {
+      $("#personalResult").className = "personal-result incorrect";
+      $("#personalResult").innerHTML = `<div class="result-verdict">無法讀取作答結果</div><div class="muted">${Live.escapeHtml(error.message)}</div>`;
+      return;
+    }
+    playerResults.set(questionIndex, data?.[0] || null);
+    if (room.current_question === questionIndex && room.phase === "revealed") {
+      renderPersonalResult(questions[questionIndex], playerResults.get(questionIndex));
+    }
+  }
+
   function renderReveal() {
     const q = questions[room.current_question];
     const reveal = revealIndexes();
@@ -189,6 +275,9 @@
     $("#revealOptions").innerHTML = q.options.map((option, index) =>
       `<div class="option ${reveal.includes(index) ? "correct" : ""}">${Live.optionLabel(index, option)}</div>`
     ).join("");
+    $("#personalResult").className = "personal-result";
+    $("#personalResult").innerHTML = `<div class="result-loading">正在讀取你的作答結果…</div>`;
+    loadPersonalResult(room.current_question);
   }
 
   $("#joinForm").addEventListener("submit", join);

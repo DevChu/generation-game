@@ -25,7 +25,7 @@ window.LIVE_QUESTIONS = [
   {
     type: "guess",
     theme: "成長、世代與價值觀",
-    prompt: "邀請一位年輕人上台：突然多出三小時自由時間，最想做什麼？",
+    prompt: "突然多出三小時自由時間，「他／她」最想做什麼？",
     options: ["睡覺／休息", "找朋友", "玩遊戲／追劇", "做自己的興趣", "把事情處理完"],
     representative: "年輕代表"
   }

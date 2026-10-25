@@ -49,11 +49,23 @@
         <div id="questionContent" class="hidden">
           <div id="questionMeta" class="question-meta"></div>
           <h2 id="questionText" class="question"></h2>
-          <section id="leaderboard" class="leaderboard hidden">
-            <h2>累積分數前三名</h2>
-            <div id="podium" class="podium"></div>
-            <p class="muted score-rule">每題最高 1,500 分：正確度最高 1,000 分，60 秒內依速度最高加 500 分。</p>
+          <section id="representativeAnswerPanel" class="representative-picker hidden">
+            <h2 id="representativePrompt">請選擇代表的答案</h2>
+            <div id="representativeOptions" class="answer-grid"></div>
+            <button id="submitRepresentative" class="primary" disabled>送出並公布</button>
           </section>
+          <div id="revealColumns" class="reveal-columns hidden">
+            <section id="leaderboard" class="leaderboard">
+              <h2>累積分數前三名</h2>
+              <div id="podium" class="podium"></div>
+              <p class="muted score-rule">每題最高 1,500 分：正確度最高 1,000 分，60 秒內依速度最高加 500 分。</p>
+            </section>
+            <section id="correctPanel" class="correct-panel">
+              <h2>本題答對 <span id="correctCount">0</span> 人</h2>
+              <div id="correctNames" class="correct-names"></div>
+              <button id="showMoreCorrect" class="ghost hidden">顯示更多…</button>
+            </section>
+          </div>
           <div id="questionOptions" class="options"></div>
           <div id="resultBars" class="bars hidden"></div>
         </div>
