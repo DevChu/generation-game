@@ -22,6 +22,8 @@
 
 第一題開始後，QR Code 會自動隱藏並停止接受新裝置加入；原本已加入的裝置重新整理後仍可回到同一房間。每題公布時會顯示累積前三名：正確度最高 1,000 分，並依 60 秒內的作答速度最多加 500 分。
 
+主持人按「結束活動」後會進入全螢幕頒獎畫面，以金、銀、銅牌和彩帶動畫公布最終前三名；可以重播動畫或關閉後再次顯示。
+
 請勿把 Supabase `service_role` key、Secret key、資料庫密碼或 connection string 放進此 repository。Publishable key 是設計給瀏覽器使用的；資料存取由 `schema.sql` 的 RLS 與 RPC 驗證限制。
 
 ### GitHub Pages

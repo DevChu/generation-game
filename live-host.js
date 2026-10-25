@@ -6,6 +6,7 @@
   let hostToken = null;
   let hostRows = [];
   let pollTimer = null;
+  let finalWinners = [];
 
   function setConnection(ok, text) {
     $("#connectionDot").classList.toggle("on", ok);
@@ -133,6 +134,7 @@
     $("#lockQuestion").disabled = room.phase !== "open";
     $("#revealQuestion").disabled = room.phase !== "locked";
     $("#nextQuestion").disabled = room.phase !== "revealed" || room.current_question >= questions.length - 1;
+    $("#endRoom").textContent = room.phase === "ended" ? "再次顯示頒獎" : "結束活動";
     $("#leaderboard").classList.toggle("hidden", room.phase !== "revealed");
 
     if (!hasQuestion) return renderCounts();
@@ -265,7 +267,7 @@
     });
   }
 
-  function renderLeaderboard() {
+  function rankedParticipants() {
     const totals = new Map(participants().map(person => [person.deviceId, {
       nickname: person.nickname,
       points: 0,
@@ -277,9 +279,13 @@
       total.points += Number(row.points) || 0;
       total.responseMs += Number(row.response_ms) || 0;
     });
-    const top = [...totals.values()]
+    return [...totals.values()]
       .sort((a, b) => b.points - a.points || a.responseMs - b.responseMs || a.nickname.localeCompare(b.nickname, "zh-Hant"))
       .slice(0, 3);
+  }
+
+  function renderLeaderboard() {
+    const top = rankedParticipants();
     $("#podium").innerHTML = top.length
       ? top.map((person, index) => `<div class="podium-card">
           <span class="podium-rank">第 ${index + 1} 名</span>
@@ -287,6 +293,35 @@
           <span class="podium-score">${person.points.toLocaleString()} 分</span>
         </div>`).join("")
       : `<p class="muted">本題尚無作答資料。</p>`;
+  }
+
+  function buildConfetti() {
+    const colors = ["#ffd166", "#49a7ff", "#55d69e", "#ff6b7a", "#ffffff", "#b89cff"];
+    $("#confetti").innerHTML = Array.from({ length: 72 }, (_, index) => {
+      const x = (index * 37 + Math.random() * 11) % 100;
+      const width = 6 + Math.random() * 8;
+      const duration = 4.2 + Math.random() * 3.8;
+      const delay = -Math.random() * duration;
+      const drift = `${-80 + Math.random() * 160}px`;
+      return `<i class="confetti-piece" style="--x:${x}%;--w:${width}px;--duration:${duration}s;--delay:${delay}s;--drift:${drift};--color:${colors[index % colors.length]}"></i>`;
+    }).join("");
+  }
+
+  function showFinale(winners = finalWinners) {
+    finalWinners = winners;
+    const medals = ["🥇", "🥈", "🥉"];
+    const ranked = winners.map((person, index) => ({ ...person, rank: index + 1 }));
+    const display = ranked.length >= 2 ? [ranked[1], ranked[0], ...ranked.slice(2)] : ranked;
+    $("#finalPodium").innerHTML = display.length
+      ? display.map(person => `<article class="award-card rank-${person.rank}">
+          <span class="award-medal">${medals[person.rank - 1]}</span>
+          <span class="award-rank">第 ${person.rank} 名</span>
+          <strong class="award-name">${Live.escapeHtml(person.nickname)}</strong>
+          <span class="award-score">${person.points.toLocaleString()} 分</span>
+        </article>`).join("")
+      : `<div class="status-card"><strong>本場沒有作答紀錄</strong></div>`;
+    buildConfetti();
+    $("#finaleOverlay").classList.remove("hidden");
   }
 
   async function setState(index, phase, revealAnswer = null) {
@@ -298,10 +333,14 @@
       p_phase: phase,
       p_reveal_answer: revealAnswer
     });
-    if (error) return setError(error);
+    if (error) {
+      setError(error);
+      return false;
+    }
     room = { ...room, current_question: index, phase, reveal_answer: phase === "revealed" ? revealAnswer : null };
     render();
     await refreshResults();
+    return true;
   }
 
   function askRepresentative(q) {
@@ -332,12 +371,23 @@
       setError(error);
     }
   });
-  $("#endRoom").addEventListener("click", () => {
+  $("#endRoom").addEventListener("click", async () => {
+    if (room.phase === "ended") return showFinale();
     if (confirm("確定要結束活動嗎？結束後參加者不能再作答。")) {
-      localStorage.removeItem("generation-live-host");
-      setState(room.current_question, "ended");
+      await refreshResults();
+      const winners = rankedParticipants();
+      const ended = await setState(room.current_question, "ended");
+      if (ended) {
+        localStorage.removeItem("generation-live-host");
+        showFinale(winners);
+      }
     }
   });
+  $("#replayFinale").addEventListener("click", () => {
+    $("#finaleOverlay").classList.add("hidden");
+    requestAnimationFrame(() => showFinale());
+  });
+  $("#closeFinale").addEventListener("click", () => $("#finaleOverlay").classList.add("hidden"));
   $("#fullscreen").addEventListener("click", () => document.documentElement.requestFullscreen?.());
   window.addEventListener("beforeunload", () => { if (pollTimer) clearInterval(pollTimer); });
 

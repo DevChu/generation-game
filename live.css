@@ -86,6 +86,46 @@ input { width: 100%; padding: 14px 15px; border: 1px solid var(--line); border-r
 .podium-name { display: block; margin: 5px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 1.25rem; font-weight: 800; }
 .podium-score { color: var(--green); font-size: 1.15rem; font-weight: 800; }
 .score-rule { margin-bottom: 0; text-align: center; }
+.finale-overlay {
+  position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; overflow: hidden;
+  padding: 28px; background: radial-gradient(circle at 50% 35%, #283457 0, #111625 42%, #070910 78%);
+}
+.finale-overlay::before {
+  content: ""; position: absolute; inset: -30%; opacity: .6;
+  background: conic-gradient(from 0deg, transparent 0 12%, rgba(255,209,102,.16) 15%, transparent 18% 46%, rgba(73,167,255,.14) 50%, transparent 54% 100%);
+  animation: finale-rays 14s linear infinite;
+}
+.finale-content { position: relative; z-index: 2; width: min(1000px, 100%); text-align: center; }
+.finale-kicker { color: var(--gold); font-weight: 900; letter-spacing: .2em; }
+.finale-content h1 { margin: 8px 0 28px; font-size: clamp(2.7rem, 8vw, 6.5rem); line-height: 1; text-shadow: 0 0 35px rgba(255,209,102,.25); }
+.final-podium { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; align-items: end; }
+.final-podium > :only-child { grid-column: 2; }
+.award-card {
+  position: relative; padding: 24px 18px; border: 1px solid rgba(255,255,255,.24); border-radius: 24px;
+  opacity: 0; transform: translateY(80px) scale(.8); background: rgba(16,21,35,.88); box-shadow: 0 22px 60px rgba(0,0,0,.35);
+  animation: award-rise .75s cubic-bezier(.2,.85,.2,1.2) forwards;
+}
+.award-card.rank-1 { min-height: 260px; border-color: var(--gold); background: linear-gradient(160deg, rgba(255,209,102,.24), rgba(16,21,35,.92)); animation-delay: 1.15s; }
+.award-card.rank-2 { min-height: 220px; animation-delay: .55s; }
+.award-card.rank-3 { min-height: 195px; animation-delay: .15s; }
+.award-medal { display: block; font-size: clamp(3rem, 6vw, 5rem); filter: drop-shadow(0 8px 14px rgba(0,0,0,.35)); }
+.award-rank { color: var(--gold); font-weight: 900; }
+.award-name { display: block; margin: 8px 0; overflow-wrap: anywhere; font-size: clamp(1.5rem, 3vw, 2.5rem); font-weight: 900; }
+.award-score { color: var(--green); font-size: clamp(1.2rem, 2vw, 1.65rem); font-weight: 900; }
+.finale-actions { display: flex; justify-content: center; gap: 12px; margin-top: 28px; opacity: 0; animation: fade-in .5s 2s forwards; }
+.confetti { position: absolute; inset: 0; pointer-events: none; }
+.confetti-piece {
+  position: absolute; top: -10vh; left: var(--x); width: var(--w); height: calc(var(--w) * 1.7);
+  border-radius: 2px; opacity: .95; background: var(--color);
+  animation: confetti-fall var(--duration) var(--delay) linear infinite;
+}
+@keyframes award-rise { to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes fade-in { to { opacity: 1; } }
+@keyframes finale-rays { to { transform: rotate(360deg); } }
+@keyframes confetti-fall {
+  0% { transform: translate3d(0,-10vh,0) rotate(0deg); }
+  100% { transform: translate3d(var(--drift),115vh,0) rotate(900deg); }
+}
 @media (max-width: 700px) {
   .shell { width: min(100% - 22px, 1180px); padding-top: 12px; }
   .lobby { grid-template-columns: 1fr; }
@@ -96,4 +136,9 @@ input { width: 100%; padding: 14px 15px; border: 1px solid var(--line); border-r
   .participant-head { align-items: flex-start; flex-direction: column; }
   .compact-stats { width: 100%; }
   .podium { grid-template-columns: 1fr; }
+  .finale-overlay { padding: 16px; }
+  .final-podium { gap: 8px; }
+  .award-card, .award-card.rank-1, .award-card.rank-2, .award-card.rank-3 { min-height: 0; padding: 15px 8px; }
+  .award-medal { font-size: 2.6rem; }
+  .finale-actions { flex-wrap: wrap; }
 }
