@@ -26,6 +26,8 @@
 
 每題公布後，參加者手機會列出自己的選項、正確答案、本題得分與答對／答錯；主持畫面則列出本題答對者，超過 20 人時可按「顯示更多」。代表題的答案由主持人在投影頁直接點選選項，再按「送出並公布」。
 
+作答期間，主持人的加入名單會以綠色與「✓」即時標示本題已作答者，尚未作答者維持灰色，方便主持人掌握進度。
+
 請勿把 Supabase `service_role` key、Secret key、資料庫密碼或 connection string 放進此 repository。Publishable key 是設計給瀏覽器使用的；資料存取由 `schema.sql` 的 RLS 與 RPC 驗證限制。
 
 ### GitHub Pages

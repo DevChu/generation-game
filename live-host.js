@@ -114,10 +114,11 @@
 
   function renderCounts() {
     const joined = participants();
+    const answered = new Set(room.current_question >= 0 ? currentResponses().map(row => row.device_id) : []);
     $("#joinedCount").textContent = joined.length;
-    $("#answeredCount").textContent = room.current_question >= 0 ? currentResponses().length : 0;
+    $("#answeredCount").textContent = answered.size;
     $("#participantNames").innerHTML = joined.length
-      ? joined.map(person => `<span class="participant-name">${Live.escapeHtml(person.nickname)}</span>`).join("")
+      ? joined.map(person => `<span class="participant-name ${answered.has(person.deviceId) ? "answered" : ""}" title="${answered.has(person.deviceId) ? "已作答" : "等待作答"}">${Live.escapeHtml(person.nickname)}</span>`).join("")
       : `<span class="muted">等待參加者加入…</span>`;
   }
 

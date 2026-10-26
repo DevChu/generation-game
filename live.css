@@ -56,6 +56,12 @@ button:disabled { cursor: not-allowed; opacity: .42; }
 .compact-stats .stat strong { display: inline; margin-left: 8px; font-size: 1.25rem; }
 .participant-names { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 16px; max-height: 148px; overflow: auto; }
 .participant-name { padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.05); }
+.participant-name.answered { color: #07140f; border-color: var(--green); background: var(--green); font-weight: 800; }
+.participant-name.answered::before { content: "✓ "; }
+.participant-legend { display: flex; gap: 14px; margin-top: 14px; color: var(--muted); font-size: .88rem; }
+.participant-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend-dot { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.22); }
+.legend-dot.answered { background: var(--green); box-shadow: 0 0 8px rgba(85,214,158,.5); }
 .question-meta { color: var(--gold); font-weight: 800; }
 .question { margin: 10px 0 22px; font-size: clamp(1.7rem, 4vw, 3.5rem); line-height: 1.2; }
 .options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
