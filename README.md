@@ -28,6 +28,8 @@
 
 作答期間，主持人的加入名單會以綠色與「✓」即時標示本題已作答者，尚未作答者維持灰色，方便主持人掌握進度。
 
+主持端與手機端使用較大的共用字級及響應式單欄版面；瀏覽器放大至 150%～200% 時，QR Code、選項、排行榜與控制按鈕會自動換行，手機也保留手勢縮放能力。
+
 請勿把 Supabase `service_role` key、Secret key、資料庫密碼或 connection string 放進此 repository。Publishable key 是設計給瀏覽器使用的；資料存取由 `schema.sql` 的 RLS 與 RPC 驗證限制。
 
 ### GitHub Pages
